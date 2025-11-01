@@ -86,37 +86,37 @@ A backend interface for administrative control:
 >One of the possible options for the website design. Some of the features shown in the screenshots are only ideas and may not be implemented, so we are not responsible for any expectations associated with them.
 1. Main page + registration + login
 
-![img.png](img/main_and_auth.png)
+![img.png](img/visualization/main_and_auth.png)
 <br/>
 <br/>
 2. Page with screened movies (the same for movies that will be available soon) <br/>
 
-![img.png](img/screened_and_soon.png)
+![img.png](img/visualization/screened_and_soon.png)
 <br/>
 <br/>
 3. Page with full information about movies
 
-![img.png](img/film_details.png)
+![img.png](img/visualization/film_details.png)
 <br/>
 <br/>
 4. Page with a map and cinemas info
 
-![img.png](img/cinemas.png)
+![img.png](img/visualization/cinemas.png)
 <br/>
 <br/>
 5. Page with full information about cinemas
 
-![img.png](img/cinema_details.png)
+![img.png](img/visualization/cinema_details.png)
 <br/>
 <br/>
 6. Page with help information
 
-![img.png](img/help.png)
+![img.png](img/visualization/help.png)
 <br/>
 <br/>
 7. Page with information about us
 
-![img.png](img/about_us.png)
+![img.png](img/visualization/about_us.png)
 <br/>
 <br/>
 
