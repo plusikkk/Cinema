@@ -1,0 +1,100 @@
+from rest_framework import serializers
+from .models import Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets
+
+
+# Я не розписувала поля вручну де це не було необхідно\неважливо
+# Також деякі поля не писала на свій розсуд
+# Якщо будуть якісь проблеми або не згодні кажіть
+
+class GenresSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genres
+        fields = '__all__'
+
+
+
+class ActorsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Actors
+        fields = '__all__'
+
+
+
+class MoviesSerializer(serializers.ModelSerializer):
+    genres = GenresSerializer(many=True, read_only=True)
+    actors = ActorsSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Movies
+        fields = ['id', 'title', 'age_category', 'description', 'trailer_url', 'poster_url', 'rating', 'release_date', 'duration', 'genres', 'director', 'actors']
+        # не вказувала 'end_date'
+
+
+
+class HallsSerializer(serializers.ModelSerializer):
+    cinema = serializers.StringRelatedField()
+
+    class Meta:
+        model = Halls
+        fields = ['id', 'name', 'cinema']
+        # не вказувала 'number_of_seats'
+
+
+
+class CinemasSerializer(serializers.ModelSerializer):
+    halls = HallsSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Cinemas
+        fields = ['id', 'name', 'description', 'address']
+        # можна було б написати 'halls', але не думаю, що треба та координати
+
+class SessionsSerializer(serializers.ModelSerializer):
+    movie = MoviesSerializer(read_only=True)
+    hall = HallsSerializer(read_only=True)
+
+    class Meta:
+        model = Sessions
+        fields = ['id', 'movie', 'hall', 'date_time', 'price']
+        # нема 'is_active'
+
+
+
+class SeatsSerializer(serializers.ModelSerializer):
+    hall = HallsSerializer(read_only=True)
+
+    class Meta:
+        model = Seats
+        fields = ['id', 'num', 'row', 'hall']
+
+
+
+class TicketsSerializer(serializers.ModelSerializer):
+    seat = SeatsSerializer(read_only=True)
+    session = SessionsSerializer(read_only=True)
+    user = serializers.StringRelatedField()
+
+    class Meta:
+        model = Tickets
+        fields = ['id', 'price', 'session', 'seat', 'purchase_date_time', 'payment_status', 'user', 'is_cancelled']
+
+    # Валідність на зайняття місця для сеансу та чи активний сам сеанс
+    def validate(self, data):
+        session = data.get('session')
+        seat = data.get('seat')
+
+        if not session.is_active:
+            raise serializers.ValidationError("Квиток неможливо забронювати, бо сеанс неактивний")
+
+        if Tickets.objects.filter(session=session, seat=seat, is_cancelled=False).exists():
+            raise serializers.ValidationError("Це місце вже заброньовано для обраного сеансу")
+        return data
+
+    # Одразу вписує юзера при покупці квитка
+    def create(self, validated_data):
+        user = self.context['request'].user
+        validated_data['user'] = user
+        return super().create(validated_data)
+
+
+
