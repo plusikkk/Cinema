@@ -11,25 +11,38 @@ class GenresSerializer(serializers.ModelSerializer):
         model = Genres
         fields = '__all__'
 
-
-
 class ActorsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Actors
         fields = '__all__'
 
-
+class MovieListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movies
+        fields = ['id', 'title', 'poster_url', 'rating', 'age_category']
 
 class MoviesSerializer(serializers.ModelSerializer):
     genres = GenresSerializer(many=True, read_only=True)
     actors = ActorsSerializer(many=True, read_only=True)
 
+    genre_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Genres.objects.all(),
+        source='genres',
+        write_only=True
+    )
+    actor_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Actors.objects.all(),
+        source='actors',
+        write_only=True
+    )
+
     class Meta:
         model = Movies
-        fields = ['id', 'title', 'age_category', 'description', 'trailer_url', 'poster_url', 'rating', 'release_date', 'duration', 'genres', 'director', 'actors']
-        # не вказувала 'end_date'
-
-
+        fields = ['id', 'title', 'age_category', 'description', 'trailer_url',
+                  'poster_url', 'rating', 'release_date', 'duration', 'director',
+                  'genres', 'actors', 'genre_ids', 'actor_ids']
 
 class HallsSerializer(serializers.ModelSerializer):
     cinema = serializers.StringRelatedField()
@@ -39,7 +52,10 @@ class HallsSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'cinema']
         # не вказувала 'number_of_seats'
 
-
+class CinemaListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cinemas
+        fields = ['id', 'name']
 
 class CinemasSerializer(serializers.ModelSerializer):
     halls = HallsSerializer(many=True, read_only=True)
