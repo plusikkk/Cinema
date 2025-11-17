@@ -18,7 +18,7 @@ class Genres(models.Model):
 
 class Actors(models.Model):
     name = CharField('Імʼя', max_length=100)
-    photo = URLField('Фото', max_length=300, blank=True)
+    photo = URLField('Фото', max_length=400, blank=True)
 
     def __str__(self):
         return self.name
@@ -41,8 +41,8 @@ class Movies(models.Model):
         default=0
     )
     description = models.TextField('Опис')
-    trailer_url = models.URLField('Трейлер', max_length=300)
-    poster_url = models.URLField('Постер', max_length=300)
+    trailer_url = models.URLField('Трейлер', max_length=400)
+    poster_url = models.URLField('Постер', max_length=400)
     rating = models.PositiveSmallIntegerField('Рейтинг', default=0, validators=[MinValueValidator(0), MaxValueValidator(5)])
     release_date = models.DateField('Дата релізу')
     end_date = models.DateField('Дата кінця показів', null=True, blank=True)

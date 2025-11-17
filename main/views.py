@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 
 from django.db.models import Q
 from django.utils import timezone
@@ -46,8 +47,10 @@ class MovieList(APIView):
         if director:
             movies = movies.filter(director__icontains=director)
 
-        serializer = MovieListSerializer(movies, many=True)
-        return Response(serializer.data)
+        paginator = MoviesPagination()
+        paginated_movies = paginator.paginate_queryset(movies, request, view=self)
+        serializer = MoviesSerializer(paginated_movies, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, format=None):
         serializer = MoviesSerializer(data=request.data)
@@ -55,6 +58,13 @@ class MovieList(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MoviesPagination(PageNumberPagination):
+    page_size = 4
+    page_size_query_param = 'page_size'
+    max_page_size = 24
+
 
 
     # РАНДОМАЙЗЕР
