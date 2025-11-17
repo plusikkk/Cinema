@@ -1,8 +1,11 @@
+import uuid
+
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.db.models import ForeignKey
 from django.db.models.fields import CharField, URLField, IntegerField
 from django.conf import settings
+from django.utils import timezone
 
 
 class Genres(models.Model):
@@ -128,14 +131,15 @@ class Halls(models.Model):
         unique_together = ['cinema', 'name']
 
 class Sessions(models.Model):
-    date_time = models.DateTimeField('Дата та час')
-    movie = models.ForeignKey(Movies, on_delete=models.PROTECT, verbose_name='Фільм', related_name='sessions')
-    price = models.IntegerField('Ціна', validators=[MinValueValidator(0), MaxValueValidator(500)])
+    start_time = models.DateTimeField('Дата та час початку', default=timezone.now)
+    end_time = models.DateTimeField('Дата та час кінця', default=timezone.now)
+    movie = models.ForeignKey(Movies, on_delete=models.CASCADE, verbose_name='Фільм', related_name='sessions')
+    price = models.IntegerField('Ціна', validators=[MinValueValidator(0)])
     hall = ForeignKey(Halls, on_delete=models.PROTECT, verbose_name='Зала', related_name='sessions')
     is_active = models.BooleanField('Активний', default=True)  # для скасованих сеансів
 
     def __str__(self):
-        return f"{self.movie.title} - {self.date_time.strftime('%d.%m.%Y %H:%M')}"
+        return f"{self.movie.title} - {self.start_time.strftime('%d.%m.%Y %H:%M')}"
 
     def get_available_seats(self):
         booked = Tickets.objects.filter(session=self).count()
@@ -144,7 +148,7 @@ class Sessions(models.Model):
     class Meta:
         verbose_name = 'Сеанс'
         verbose_name_plural = 'Сеанси'
-        ordering = ['date_time']
+        ordering = ['start_time']
 
 class Seats(models.Model):
     hall = ForeignKey(Halls, on_delete=models.CASCADE, verbose_name='Зала', related_name='seats')
@@ -164,35 +168,43 @@ class Seats(models.Model):
         ordering = ['hall', 'row', 'num']
         unique_together = ['hall', 'row', 'num']
 
+class Order(models.Model):
+    class OrderStatus(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        PAID = 'paid', 'Paid'
+        FAILED = 'failed', 'Failed'
+        REFUNDED = 'refunded', 'Refunded'
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name='Клієнт', related_name='orders')
+    created_at = models.DateTimeField('Дата та час створення', auto_now_add=True)
+    total_amount = models.IntegerField('Загальна сума', validators=[MinValueValidator(0)])
+    status = models.CharField('Статус оплати', max_length=15, choices=OrderStatus.choices, default=OrderStatus.PENDING)
+    liqpay_order_id = models.CharField('ID замовлення (LiqPay)', max_length=255, unique=True, db_index=True, default=uuid.uuid4)
+
+    def __str__(self):
+        return f"Замовлення #{self.id} від {self.user.username} ({self.get_status_display()})"
+
+    class Meta:
+        verbose_name = 'Замовлення'
+        verbose_name_plural = 'Замовлення'
+        ordering = ['-created_at']
+
 class Tickets(models.Model):
     session = ForeignKey(Sessions, on_delete=models.PROTECT, verbose_name='Сеанс', related_name='tickets')
     seat = ForeignKey(Seats, on_delete=models.PROTECT, verbose_name='Місце', related_name='tickets')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='Клієнт', related_name='tickets')
-    purchase_date_time = models.DateTimeField('Дата та час покупки', auto_now_add=True)
     price = models.IntegerField('Ціна квитка',help_text='Ціна на момент покупки', validators=[MinValueValidator(0), MaxValueValidator(500)])
     is_cancelled = models.BooleanField('Скасовано', default=False)
-
-    # Для онлайн-оплати
-    payment_status = models.CharField(
-        'Статус оплати',
-        max_length=20,
-        choices=[
-            ('pending', 'Очікується'),
-            ('paid', 'Оплачено'),
-            ('failed', 'Помилка'),
-            ('refunded', 'Повернено'),
-        ],
-        default='pending'
-    )
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, verbose_name='Замовлення', related_name='tickets')
 
     def __str__(self):
-        return f"Квиток #{self.id} - {self.session.movie.title}"
+        return f"Квиток #{self.id} (Замовлення #{self.order.id}) - {self.session.movie.title}"
 
     class Meta:
         verbose_name = 'Квиток'
         verbose_name_plural = 'Квитки'
-        ordering = ['-purchase_date_time']
+        ordering = ['-order__created_at']
         unique_together = ['session', 'seat']
+
 
 
 

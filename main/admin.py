@@ -1,7 +1,10 @@
 from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html
+
 from .models import (
     Genres, Actors, Movies, Cinemas,
-    Halls, Sessions, Seats, Tickets
+    Halls, Sessions, Seats, Tickets, Order
 )
 
 class HallInline(admin.TabularInline):
@@ -19,6 +22,14 @@ class SeatInline(admin.TabularInline):
 
     def has_add_permission(self, request, obj=None):
         return False
+
+class TicketsInline(admin.TabularInline):
+    model = Tickets
+    fields = ('session', 'seat', 'price', 'is_cancelled')
+    readonly_fields = ('session', 'seat', 'price')
+    autocomplete_fields = ['session', 'seat']
+    extra = 0
+    can_delete = False
 
 @admin.register(Movies)
 class MovieAdmin(admin.ModelAdmin):
@@ -42,11 +53,10 @@ class HallAdmin(admin.ModelAdmin):
 
 @admin.register(Sessions)
 class SessionAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'movie', 'hall', 'date_time', 'price', 'is_active')
-    list_filter = ('date_time', 'hall__cinema', 'movie', 'is_active')
+    list_display = ('__str__', 'movie', 'hall', 'start_time', 'end_time', 'price', 'is_active')
+    list_filter = ('start_time','end_time', 'hall__cinema', 'movie', 'is_active')
     search_fields = ('movie__title', 'hall__name')
     autocomplete_fields = ['movie', 'hall']
-
 
 @admin.register(Seats)
 class SeatAdmin(admin.ModelAdmin):
@@ -55,13 +65,35 @@ class SeatAdmin(admin.ModelAdmin):
     search_fields = ('hall__name', 'hall__cinema__name', 'row', 'num')
     autocomplete_fields = ['hall']
 
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    inlines = [TicketsInline]
+    list_display = ('id', 'user', 'status', 'total_amount', 'get_ticket_count', 'created_at', 'liqpay_order_id')
+    list_filter = ('status', 'created_at')
+    search_fields = ('user__username', 'liqpay_order_id')
+    autocomplete_fields = ['user']
+    date_hierarchy = 'created_at'
+
+    readonly_fields = ('user', 'liqpay_order_id', 'created_at', 'total_amount')
+
+    @admin.display(ordering='Кількість квитків')
+    def get_ticket_count(self, obj):
+        return obj.tickets.count()
 
 @admin.register(Tickets)
 class TicketAdmin(admin.ModelAdmin):
-    list_display = ('id', 'session', 'user', 'seat', 'purchase_date_time', 'payment_status')
-    list_filter = ('payment_status', 'purchase_date_time', 'session__hall__cinema')
-    search_fields = ('user__username', 'session__movie__title')
-    autocomplete_fields = ['session', 'seat', 'user']
+    list_display = ('id', 'get_user', 'session', 'seat', 'get_payment_status', 'is_cancelled')
+    list_filter = ('order__status', 'is_cancelled', 'order__created_at', 'session__hall__cinema')
+    search_fields = ('order__user__username', 'session__movie__title', 'order__liqpay_order_id')
+    autocomplete_fields = ['order', 'session', 'seat']
+
+    @admin.display(description='Користувач', ordering='order__user')
+    def get_user(self, obj):
+        return obj.order.user
+
+    @admin.display(description='Статус оплати', ordering='order__status')
+    def get_payment_status(self, obj):
+        return obj.order.payment_status_display()
 
 admin.site.register(Genres)
 admin.site.register(Actors)
