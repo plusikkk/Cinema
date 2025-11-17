@@ -1,10 +1,14 @@
-from django.http import Http404
+from random import random
+
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from django.db.models import Q
 from django.utils import timezone
+from django.http import Http404
+
 from main.models import Movies, Cinemas
 from main.serializers import MoviesSerializer, MovieListSerializer, CinemasSerializer, CinemaListSerializer
 
@@ -29,7 +33,7 @@ class MovieList(APIView):
         elif status == 'soon':
             movies = movies.filter(release_date__gt=today)
 
-        genres = request.query_params.get('genres')
+        genres = request.query_params.get('genres')     # Фільтрація лінку
         if genres:
             movies = movies.filter(genres__name__icontains=genres).distinct()
         age_category = request.query_params.get('age_category')
@@ -51,6 +55,44 @@ class MovieList(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    # РАНДОМАЙЗЕР
+class RandomMovie(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, format=None):
+        movies = Movies.objects.all()
+
+        # чекбокси
+        movie_type = request.data.get('type')
+        rating = request.data.get('rating')
+        family = request.data.get('family')
+
+        if movie_type == 'animation': # Мультфільми
+            movies = movies.filter(genres__name__icontains='animation')
+
+        if family == 'family': # Сімейні фільми до 16+
+            movies = movies.filter(age_category__lt=16)
+
+        if family == '18+': # Фільми до 18+
+            movies = movies.filter(age_category__lt=18)
+
+        today = timezone.now().date() # лише актуальні фільми
+        movies = movies.filter(
+            Q(release_date__lte=today),
+            Q(end_date__gte=today) | Q(end_date__isnull=True)
+        ).distinct()
+
+        movies_list = list(movies)
+        if not movies_list:
+            return Response({"Немає фільмів, що відповідають фільтрам"}, status=status.HTTP_204_NO_CONTENT)
+
+        movie = random.choice(movies_list)
+        serializer = MovieListSerializer(movie)
+        return Response(serializer.data, status=200)
+
+
 
 class MovieDetail(APIView):
     def get_permissions(self):
@@ -82,6 +124,11 @@ class MovieDetail(APIView):
         movie.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+
+
+
+
 class CinemaList(APIView):
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -99,6 +146,8 @@ class CinemaList(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 class CinemaDetail(APIView):
     def get_permissions(self):
