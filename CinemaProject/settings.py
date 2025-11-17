@@ -33,6 +33,7 @@ CORS_ALLOWED_ORIGINS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'drf_yasg',
     'main',
     'Auth',
     'corsheaders',
