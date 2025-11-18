@@ -1,4 +1,5 @@
 from random import random
+from re import search
 
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser, AllowAny
@@ -47,6 +48,15 @@ class MovieList(APIView):
         if director:
             movies = movies.filter(director__icontains=director)
 
+        search_query = request.query_params.get('search', None)
+        if search_query:
+            movies = movies.filter(
+                Q(title__icontains=search_query) |
+                Q(actors__name__icontains=search_query) |
+                Q(director__icontains=search_query)
+            ).distinct()
+
+
         paginator = MoviesPagination()
         paginated_movies = paginator.paginate_queryset(movies, request, view=self)
         serializer = MoviesSerializer(paginated_movies, many=True)
@@ -59,7 +69,7 @@ class MovieList(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+    # ПАГІНАЦІЯ
 class MoviesPagination(PageNumberPagination):
     page_size = 4
     page_size_query_param = 'page_size'
