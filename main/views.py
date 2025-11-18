@@ -1,15 +1,19 @@
+import json
+from base64 import b64decode
 from random import random
 
+from django.conf import settings
+from django.db import transaction
+from liqpay import LiqPay
 from rest_framework import status
-from rest_framework.permissions import IsAdminUser, AllowAny
+from rest_framework.permissions import IsAdminUser, AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from django.db.models import Q
 from django.utils import timezone
 from django.http import Http404
 
-from main.models import Movies, Cinemas
+from main.models import Movies, Cinemas, Sessions, Seats, Order, Tickets
 from main.serializers import MoviesSerializer, MovieListSerializer, CinemasSerializer, CinemaListSerializer
 
 
@@ -92,8 +96,6 @@ class RandomMovie(APIView):
         serializer = MovieListSerializer(movie)
         return Response(serializer.data, status=200)
 
-
-
 class MovieDetail(APIView):
     def get_permissions(self):
         if self.request.method != 'GET':
@@ -123,11 +125,6 @@ class MovieDetail(APIView):
         movie = self.get_object(pk)
         movie.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-
-
-
 
 class CinemaList(APIView):
     def get_permissions(self):
@@ -178,6 +175,96 @@ class CinemaDetail(APIView):
         cinema = self.get_object(pk)
         cinema.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class CreateOrder(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, format=None):
+        session_id = request.data.get('session_id')
+        seat_id = request.data.get('seat_id')
+
+        if not session_id or not seat_id:
+            return Response({"error": 'Потрібно вказати session_id and seat_id'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            session = Sessions.objects.get(id=session_id, is_active=True)
+            seats = Seats.objects.filter(id__in=seat_id, hall=session.hall)
+
+            if len(seats) != len(seat_id):
+                return Response({"error": 'Обрані місця невірні'}, status=status.HTTP_400_BAD_REQUEST)
+
+            total_amount = session.price * len(seats)
+            order = Order.objects.create(user=request.user, total_amount=total_amount, status=Order.OrderStatus.PENDING)
+            tickets_create = []
+            for seat in seats:
+                tickets_create.append(Tickets(order=order, seat=seat, session=session, price=session.price))
+            Tickets.objects.bulk_create(tickets_create)
+
+            liqpay = LiqPay(settings.LIQPAY_PUBLIC_KEY, settings.LIQPAY_PRIVATE_KEY)
+            base_url = "https://overlate-unmorbidly-gwenda.ngrok-free.dev" #ЗАМІНИТИ ПРИ НАСТУПНОМУ ЗАПУСКУ
+
+            params = {
+                "action": "pay",
+                "amount": str(total_amount),
+                "currency": "UAH",
+                "description": f"Tickets for {session.movie.title} (order #{order.id})",
+                "order_id": str(order.liqpay_order_id),
+                "version": "3",
+                "sandbox": "1",
+                "result_url": f"{base_url}/movies/{session.movie.id}/",
+                "server_url": f"{base_url}/api/payment/callback/",
+            }
+
+            data = liqpay.cnb_data(params)
+            signature = liqpay.cnb_signature(params)
+            return Response({'data': data, 'signature': signature}, status=status.HTTP_201_CREATED)
+
+        except Sessions.DoesNotExist:
+            return Response({'error': 'Сеанс не знайдено'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': f'Внутрішня помилка: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class LiqPayCallback(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request, format=None):
+        liqpay = LiqPay(settings.LIQPAY_PUBLIC_KEY, settings.LIQPAY_PRIVATE_KEY)
+        data = request.data.get('data')
+        signature = request.data.get('signature')
+
+        if not data or not signature:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        expected_signature = liqpay.str_to_sign(settings.LIQPAY_PRIVATE_KEY + data + settings.LIQPAY_PRIVATE_KEY)
+
+        if expected_signature != signature:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            decoded_data = json.loads(b64decode(data).decode('utf-8'))
+        except Exception:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        payment_status = decoded_data.get('status')
+        liqpay_order_id = decoded_data.get('order_id')
+
+        try:
+            order = Order.objects.get(liqpay_order_id=liqpay_order_id)
+        except Order.DoesNotExist:
+            print(f"ПОМИЛКА: Отримано callback для неіснуючого liqpay_order_id: {liqpay_order_id}")
+            return Response(status=status.HTTP_200_OK) #щоб не отримувати повторних запитів від лікпею
+
+        if payment_status in ['success', 'sandbox']:
+            order.status = Order.OrderStatus.PAID
+            order.save()
+            # подальша логіка (можливо квитки на пошту)
+
+        elif payment_status in ['error', 'failed', 'failure']:
+            order.status = Order.OrderStatus.FAILED
+            order.save()
+            # подальша логіка (можливо видалення квитків які не пройшли оплату)
+        return Response(status=status.HTTP_200_OK)
+
+
 
 
 

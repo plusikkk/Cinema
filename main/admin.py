@@ -93,7 +93,7 @@ class TicketAdmin(admin.ModelAdmin):
 
     @admin.display(description='Статус оплати', ordering='order__status')
     def get_payment_status(self, obj):
-        return obj.order.payment_status_display()
+        return obj.order.status
 
 admin.site.register(Genres)
 admin.site.register(Actors)

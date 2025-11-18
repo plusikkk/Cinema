@@ -5,6 +5,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -21,7 +22,10 @@ SECRET_KEY = 'django-insecure-u5z3gra4@khdzs!)6i=#abp*+^6%u-oz&!vtsv^02g_(o@0#u@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+LIQPAY_PUBLIC_KEY = "КЛЮЧ"
+LIQPAY_PRIVATE_KEY = "КЛЮЧ"
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'overlate-unmorbidly-gwenda.ngrok-free.dev'] #ЗАМІНИТИ ПРИ НАСТУПНОМУ ЗАПУСКУ
 
 
 CORS_ALLOWED_ORIGINS = [
