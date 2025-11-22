@@ -3,8 +3,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from .models import (
-    Genres, Actors, Movies, Cinemas,
-    Halls, Sessions, Seats, Tickets, Order
+    Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, Order, MovieBadges
 )
 
 class HallInline(admin.TabularInline):
@@ -31,12 +30,21 @@ class TicketsInline(admin.TabularInline):
     extra = 0
     can_delete = False
 
+@admin.register(MovieBadges)
+class MovieBadgesAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+
 @admin.register(Movies)
 class MovieAdmin(admin.ModelAdmin):
-    list_display = ('title', 'release_date', 'age_category', 'rating', 'director')
-    list_filter = ('age_category', 'genres', 'release_date')
+    list_display = ('title', 'get_badges', 'release_date', 'age_category', 'rating', 'director')
+    list_filter = ('badges', 'age_category', 'genres', 'release_date')
     search_fields = ('title', 'director')
-    filter_horizontal = ('genres', 'actors')
+    filter_horizontal = ('genres', 'actors', 'badges')
+
+    def get_badges(self, obj):
+        return ', '.join([b.name for b in obj.badges.all()])
+    get_badges.short_description = 'Значки/Статуси'
 
 @admin.register(Cinemas)
 class CinemaAdmin(admin.ModelAdmin):

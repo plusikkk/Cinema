@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, Order
+from .models import Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, Order, MovieBadges
 
 
 # Я не розписувала поля вручну де це не було необхідно\неважливо
@@ -16,14 +16,20 @@ class ActorsSerializer(serializers.ModelSerializer):
         model = Actors
         fields = '__all__'
 
+class MovieBadgesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MovieBadges
+        fields = '__all__'
+
 class MovieListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movies
-        fields = ['id', 'title', 'poster_url', 'rating', 'age_category']
+        fields = ['id', 'title', 'poster_url', 'rating', 'age_category', 'description', 'trailer_url']
 
 class MoviesSerializer(serializers.ModelSerializer):
     genres = GenresSerializer(many=True, read_only=True)
     actors = ActorsSerializer(many=True, read_only=True)
+    badges = MovieBadgesSerializer(many=True, read_only=True)
 
     genre_ids = serializers.PrimaryKeyRelatedField(
         many=True,
@@ -40,7 +46,7 @@ class MoviesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Movies
-        fields = ['id', 'title', 'age_category', 'description', 'trailer_url',
+        fields = ['id', 'title', 'badges', 'age_category', 'description', 'trailer_url',
                   'poster_url', 'rating', 'release_date', 'duration', 'director',
                   'genres', 'actors', 'genre_ids', 'actor_ids']
 

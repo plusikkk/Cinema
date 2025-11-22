@@ -8,4 +8,5 @@ urlpatterns = [
     path('cinemas/<int:pk>/', views.CinemaDetail.as_view(), name='cinemas-detail'),
     path('orders/create/', views.CreateOrder.as_view(), name='create-order'),
     path('payment/callback/', views.LiqPayCallback.as_view(), name='payment-callback'),
+    path('random-movie/', views.RandomMovie.as_view(), name='random-movie'),
 ]
