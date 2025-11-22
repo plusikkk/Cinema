@@ -24,7 +24,7 @@ class MovieBadgesSerializer(serializers.ModelSerializer):
 class MovieListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movies
-        fields = ['id', 'title', 'poster_url', 'rating', 'age_category']
+        fields = ['id', 'title', 'poster_url', 'rating', 'age_category', 'description', 'trailer_url']
 
 class MoviesSerializer(serializers.ModelSerializer):
     genres = GenresSerializer(many=True, read_only=True)
