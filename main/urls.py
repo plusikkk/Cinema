@@ -6,4 +6,5 @@ urlpatterns = [
     path('movies/<int:pk>/', views.MovieDetail.as_view(), name='movies-detail'),
     path('cinemas/', views.CinemaList.as_view(), name='cinemas-list'),
     path('cinemas/<int:pk>/', views.CinemaDetail.as_view(), name='cinemas-detail'),
+    path('random-movie/', views.RandomMovie.as_view(), name='random-movie'),
 ]

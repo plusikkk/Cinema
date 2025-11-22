@@ -1,9 +1,11 @@
-from random import random
+from random import choice
+# from re import search - забула прибрати, думала зробити складніший пошук по гайду, але зрозуміла, що нам не має потреби в цьому і вистачить просто джанго. Наступного коміту повністю приберу
 
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 
 from django.db.models import Q
 from django.utils import timezone
@@ -46,8 +48,18 @@ class MovieList(APIView):
         if director:
             movies = movies.filter(director__icontains=director)
 
-        serializer = MovieListSerializer(movies, many=True)
-        return Response(serializer.data)
+        search_query = request.query_params.get('search', None)
+        if search_query:
+            movies = movies.filter(
+                Q(title__icontains=search_query) |
+                Q(actors__name__icontains=search_query) |
+                Q(director__icontains=search_query)
+            ).distinct()
+
+        paginator = MoviesPagination()
+        paginated_movies = paginator.paginate_queryset(movies, request, view=self)
+        serializer = MoviesSerializer(paginated_movies, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, format=None):
         serializer = MoviesSerializer(data=request.data)
@@ -55,6 +67,13 @@ class MovieList(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # ПАГІНАЦІЯ
+class MoviesPagination(PageNumberPagination):
+    page_size = 4
+    page_size_query_param = 'page_size'
+    max_page_size = 24
+
 
 
     # РАНДОМАЙЗЕР
@@ -75,7 +94,7 @@ class RandomMovie(APIView):
         if family == 'family': # Сімейні фільми до 16+
             movies = movies.filter(age_category__lt=16)
 
-        if family == '18+': # Фільми до 18+
+        if rating == '18+': # Фільми до 18+
             movies = movies.filter(age_category__lt=18)
 
         today = timezone.now().date() # лише актуальні фільми
@@ -88,9 +107,9 @@ class RandomMovie(APIView):
         if not movies_list:
             return Response({"Немає фільмів, що відповідають фільтрам"}, status=status.HTTP_204_NO_CONTENT)
 
-        movie = random.choice(movies_list)
-        serializer = MovieListSerializer(movie)
-        return Response(serializer.data, status=200)
+        movie = choice(movies_list)
+        serializer = MoviesSerializer(movie)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
