@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, MovieBadges
+from .models import Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, Order, MovieBadges
 
 
 # Я не розписувала поля вручну де це не було необхідно\неважливо
@@ -77,10 +77,8 @@ class SessionsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Sessions
-        fields = ['id', 'movie', 'hall', 'date_time', 'price']
+        fields = ['id', 'movie', 'hall', 'start_time', 'end_time', 'price']
         # нема 'is_active'
-
-
 
 class SeatsSerializer(serializers.ModelSerializer):
     hall = HallsSerializer(read_only=True)
@@ -90,15 +88,16 @@ class SeatsSerializer(serializers.ModelSerializer):
         fields = ['id', 'num', 'row', 'hall']
 
 
-
 class TicketsSerializer(serializers.ModelSerializer):
     seat = SeatsSerializer(read_only=True)
     session = SessionsSerializer(read_only=True)
-    user = serializers.StringRelatedField()
+
+    seat_id = serializers.PrimaryKeyRelatedField(queryset=Seats.objects.all(), source='seat', write_only=True)
+    session_id = serializers.PrimaryKeyRelatedField(queryset=Sessions.objects.all(), source='session', write_only=True)
 
     class Meta:
         model = Tickets
-        fields = ['id', 'price', 'session', 'seat', 'purchase_date_time', 'payment_status', 'user', 'is_cancelled']
+        fields = ['id', 'price', 'session', 'seat', 'session_id', 'seat_id', 'is_cancelled']
 
     # Валідність на зайняття місця для сеансу та чи активний сам сеанс
     def validate(self, data):
@@ -112,11 +111,20 @@ class TicketsSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Це місце вже заброньовано для обраного сеансу")
         return data
 
+class OrdersSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
+    tickets = TicketsSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ['id', 'user', 'created_at', 'total_amount', 'status', 'liqpay_order_id', 'tickets']
+
     # Одразу вписує юзера при покупці квитка
     def create(self, validated_data):
         user = self.context['request'].user
         validated_data['user'] = user
         return super().create(validated_data)
+
 
 
 
