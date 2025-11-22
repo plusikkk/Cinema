@@ -18,7 +18,7 @@ class Genres(models.Model):
 
 class Actors(models.Model):
     name = CharField('Імʼя', max_length=100)
-    photo = URLField('Фото', max_length=400, blank=True)
+    photo = URLField('Фото', max_length=1000, blank=True)
 
     def __str__(self):
         return self.name
@@ -27,6 +27,19 @@ class Actors(models.Model):
         verbose_name = 'Актор'
         verbose_name_plural = 'Актори'
         ordering = ['name']
+
+
+    # ЗНАЧОК ДО ФІЛЬМІВ З ДОП ІНФОЮ ПРО ЗНИЖКИ ПОКАЗИ І ТД
+class MovieBadges(models.Model):
+    name = models.CharField('Текс значка', max_length=100, help_text='Новинка, IMAX, Спецпоказ')
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Значок'
+        verbose_name_plural = 'Значки'
+
 
 class Movies(models.Model):
     title = models.CharField('Назва фільму', max_length=200)
@@ -41,8 +54,8 @@ class Movies(models.Model):
         default=0
     )
     description = models.TextField('Опис')
-    trailer_url = models.URLField('Трейлер', max_length=400)
-    poster_url = models.URLField('Постер', max_length=400)
+    trailer_url = models.URLField('Трейлер', max_length=1000)
+    poster_url = models.URLField('Постер', max_length=1000)
     rating = models.PositiveSmallIntegerField('Рейтинг', default=0, validators=[MinValueValidator(0), MaxValueValidator(5)])
     release_date = models.DateField('Дата релізу')
     end_date = models.DateField('Дата кінця показів', null=True, blank=True)
@@ -50,6 +63,7 @@ class Movies(models.Model):
     genres = models.ManyToManyField(Genres, verbose_name='Жанр', related_name='movies')
     director = models.CharField('Режисер', max_length=100)
     actors = models.ManyToManyField(Actors, verbose_name='Актори', related_name='movies')
+    badges = models.ManyToManyField(MovieBadges, verbose_name='Значок/Статус')
 
     def __str__(self):
         return self.title
