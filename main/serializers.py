@@ -68,8 +68,11 @@ class CinemasSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cinemas
-        fields = ['id', 'name', 'description', 'address']
-        # можна було б написати 'halls', але не думаю, що треба та координати
+        fields = ['id', 'name', 'description', 'address', 'latitude', 'longitude']
+
+        def get_coordinates(self, obj):
+            return obj.get_coordinates()
+
 
 class SessionsSerializer(serializers.ModelSerializer):
     movie = MoviesSerializer(read_only=True)
