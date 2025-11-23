@@ -22,6 +22,8 @@ SECRET_KEY = 'django-insecure-u5z3gra4@khdzs!)6i=#abp*+^6%u-oz&!vtsv^02g_(o@0#u@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
 LIQPAY_PUBLIC_KEY = "КЛЮЧ"
 LIQPAY_PRIVATE_KEY = "КЛЮЧ"
 
