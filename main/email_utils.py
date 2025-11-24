@@ -16,7 +16,7 @@ def send_email(order):
         message_lines.append(f"Фільм: {ticket.session.movie.title}")
         message_lines.append(f"Кінотеатр: {ticket.session.hall.cinema.name}")
         message_lines.append(f"Початок сеансу: {ticket.session.start_time.strftime('%Y-%m-%d %H:%M')}")
-        message_lines.append(f"Місце: Ряд {ticket.seat.row}, Місце {ticket.seat.num}")
+        message_lines.append(f"Ряд {ticket.seat.row}, Місце {ticket.seat.num}")
         message_lines.append(f"Ціна: {ticket.price} UAH")
 
         full_message = "\n".join(message_lines)

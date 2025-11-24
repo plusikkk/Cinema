@@ -22,7 +22,12 @@ SECRET_KEY = 'django-insecure-u5z3gra4@khdzs!)6i=#abp*+^6%u-oz&!vtsv^02g_(o@0#u@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'ccoonnel@gmail.com'
+EMAIL_HOST_PASSWORD = 'КЛЮЧ'
 
 LIQPAY_PUBLIC_KEY = "КЛЮЧ"
 LIQPAY_PRIVATE_KEY = "КЛЮЧ"
