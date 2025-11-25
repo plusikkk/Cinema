@@ -1,23 +1,49 @@
-from rest_framework import status
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from Auth.serializers import UserSerializer
-from rest_framework import generics
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
+
+from .serializers import UserSerializer
+from rest_framework import generics, status
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
+from Auth.utils import send_email
 
-class RegisterView(APIView):
-    def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+User = get_user_model()
 class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        try:
+            send_email(user, request)
+            return Response({"message": "User created successfully. Check email to activate your account"}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            user.delete()
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ActivationView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request, uidb64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            user.is_active = True
+            user.save()
+            return Response({"message": "Email confirmed"}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Invalid activation link"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ManageUserView(generics.RetrieveUpdateAPIView):
