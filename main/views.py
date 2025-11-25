@@ -16,6 +16,7 @@ from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 
 
+from main.email_utils import send_email
 from main.models import Movies, Cinemas, Sessions, Seats, Order, Tickets
 from main.serializers import MoviesSerializer, CinemasSerializer, CinemaListSerializer
 
@@ -276,7 +277,11 @@ class LiqPayCallback(APIView):
         if payment_status in ['success', 'sandbox']:
             order.status = Order.OrderStatus.PAID
             order.save()
-            # подальша логіка (можливо квитки на пошту)
+
+            try:
+                send_email(order)
+            except Exception as e:
+                print(f"Виникла помилка при надсиланні квитків: {e}")
 
         elif payment_status in ['error', 'failed', 'failure']:
             order.status = Order.OrderStatus.FAILED
