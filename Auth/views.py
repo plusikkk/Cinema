@@ -10,7 +10,7 @@ from rest_framework import generics, status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
-from Auth.utils import send_email
+from Auth.utils import send_act_email
 
 User = get_user_model()
 class CreateUserView(generics.CreateAPIView):
@@ -23,7 +23,7 @@ class CreateUserView(generics.CreateAPIView):
         user = serializer.save()
 
         try:
-            send_email(user, request)
+            send_act_email(user, request)
             return Response({"message": "User created successfully. Check email to activate your account"}, status=status.HTTP_201_CREATED)
         except Exception as e:
             user.delete()

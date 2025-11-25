@@ -5,7 +5,7 @@ from django.utils.http import urlsafe_base64_encode
 from django.core.mail import send_mail
 
 
-def send_email(user, request):
+def send_act_email(user, request):
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     domain = request.get_host()
@@ -18,7 +18,7 @@ def send_email(user, request):
     {activation_link}
     """
 
-    send_email(
+    send_mail(
         subject,
         message,
         settings.EMAIL_HOST_USER,
