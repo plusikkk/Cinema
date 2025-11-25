@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, Order, MovieBadges
+from .models import Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, Order, MovieBadges, CinemaBadges, \
+    CityBadges
 
 
 # Я не розписувала поля вручну де це не було необхідно\неважливо
@@ -58,21 +59,35 @@ class HallsSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'cinema']
         # не вказувала 'number_of_seats'
 
+class CityBadgesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CityBadges
+        fields = '__all__'
+
+class CinemaBadgesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CinemaBadges
+        fields = '__all__'
+
 class CinemaListSerializer(serializers.ModelSerializer):
+    badges = CinemaBadgesSerializer(many=True, read_only=True)
+    city = CityBadgesSerializer(read_only=True)
+
     class Meta:
         model = Cinemas
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'latitude', 'longitude', 'address', 'description', 'photo', 'badges', 'city']
 
 class CinemasSerializer(serializers.ModelSerializer):
     halls = HallsSerializer(many=True, read_only=True)
+    badges = CinemaBadgesSerializer(many=True, read_only=True)
+    city = CityBadgesSerializer(read_only=True)
 
     class Meta:
         model = Cinemas
-        fields = ['id', 'name', 'description', 'address', 'latitude', 'longitude']
+        fields = ['id', 'name', 'description', 'address', 'latitude', 'longitude', 'halls', 'badges', 'photo', 'city']
 
         def get_coordinates(self, obj):
             return obj.get_coordinates()
-
 
 class SessionsSerializer(serializers.ModelSerializer):
     movie = MoviesSerializer(read_only=True)
