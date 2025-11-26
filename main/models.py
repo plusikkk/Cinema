@@ -34,6 +34,7 @@ class Actors(models.Model):
     # ЗНАЧОК ДО ФІЛЬМІВ З ДОП ІНФОЮ ПРО ЗНИЖКИ ПОКАЗИ І ТД
 class MovieBadges(models.Model):
     name = models.CharField('Текст значка', max_length=100, help_text='Новинка, IMAX, Спецпоказ')
+    description = models.CharField('Опис значка', max_length=225)
 
     def __str__(self):
         return self.name
@@ -41,6 +42,28 @@ class MovieBadges(models.Model):
     class Meta:
         verbose_name = 'Значок фільму'
         verbose_name_plural = 'Значки фільму'
+
+    # ЗНАЧОК ДО КІНОТЕАТРІВ З МІСТАМИ
+class CityBadges(models.Model):
+    name = models.CharField('Місто', max_length=100)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Місто'
+        verbose_name_plural = 'Міста'
+
+    # ЗНАЧОК ДО КІНОТЕАТРІВ З ДОП ІНФОЮ ПРО ЗРУЧНОСТІ ПОСЛУГИ І ТД
+class CinemaBadges(models.Model):
+    name = models.CharField('Текст значка', max_length=100, help_text='Parking, IMAX, LUX')
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Значок кінотеатру'
+        verbose_name_plural = 'Значки кінотеатру'
 
 
 class Movies(models.Model):
@@ -82,28 +105,6 @@ class Movies(models.Model):
         verbose_name = 'Фільм'
         verbose_name_plural = 'Фільми'
         ordering = ['-release_date']
-
-    # ЗНАЧОК ДО КІНОТЕАТРІВ З МІСТАМИ
-class CityBadges(models.Model):
-    name = models.CharField('Місто', max_length=100)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = 'Місто'
-        verbose_name_plural = 'Міста'
-
-    # ЗНАЧОК ДО КІНОТЕАТРІВ З ДОП ІНФОЮ ПРО ЗРУЧНОСТІ ПОСЛУГИ І ТД
-class CinemaBadges(models.Model):
-    name = models.CharField('Текст значка', max_length=100, help_text='Parking, IMAX, LUX')
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = 'Значок кінотеатру'
-        verbose_name_plural = 'Значки кінотеатру'
 
 class Cinemas(models.Model):
     name = models.CharField('Назва', max_length=100)

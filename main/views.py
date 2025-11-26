@@ -95,7 +95,11 @@ class RandomMovie(APIView):
         family = request.data.get('family')
 
         if movie_type == 'animation': # Мультфільми
-            movies = movies.filter(genres__name__icontains='animation')
+            movies = movies.filter(
+                Q(genres__name__icontains='мультфільм') |
+                Q(genres__name__icontains='анімація') |
+                Q(genres__name__icontains='animation')
+            )
 
         if family == 'family': # Сімейні фільми до 16+
             movies = movies.filter(age_category__lt=16)
