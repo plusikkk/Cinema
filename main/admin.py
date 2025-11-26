@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from .models import (
-    Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, Order, MovieBadges
+    Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, Order, MovieBadges, CinemaBadges, CityBadges
 )
 
 class HallInline(admin.TabularInline):
@@ -44,13 +44,32 @@ class MovieAdmin(admin.ModelAdmin):
 
     def get_badges(self, obj):
         return ', '.join([b.name for b in obj.badges.all()])
-    get_badges.short_description = 'Значки/Статуси'
+    get_badges.short_description = 'Значки/Статуси фільмів'
+
+@admin.register(CityBadges)
+class CityBadgesAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+
+@admin.register(CinemaBadges)
+class CinemaBadgesAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
 
 @admin.register(Cinemas)
 class CinemaAdmin(admin.ModelAdmin):
-    list_display = ('name', 'address')
+    list_display = ('name', 'address', 'get_badges', 'get_city',)
     search_fields = ('name', 'address')
     inlines = [HallInline]
+    filter_horizontal = ('badges',)
+
+    def get_city(self, obj):
+        return ', '.join([b.name for b in obj.badges.all()])
+    get_city.short_description = 'Значки міста'
+
+    def get_badges(self, obj):
+        return ', '.join([b.name for b in obj.badges.all()])
+    get_badges.short_description = 'Значки/Статуси кінотеатру'
 
 @admin.register(Halls)
 class HallAdmin(admin.ModelAdmin):

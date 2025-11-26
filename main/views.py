@@ -1,22 +1,24 @@
 import json
 from base64 import b64decode
 from random import choice
-# from re import search - забула прибрати, думала зробити складніший пошук по гайду, але зрозуміла, що нам не має потреби в цьому і вистачить просто джанго. Наступного коміту повністю приберу
+from liqpay import LiqPay
 
 from django.conf import settings
 from django.db import transaction
-from liqpay import LiqPay
+from django.db.models import Q
+from django.utils import timezone
+from django.http import Http404
+
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser, AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Q
-from django.utils import timezone
-from django.http import Http404
 
+
+from main.email_utils import send_email
 from main.models import Movies, Cinemas, Sessions, Seats, Order, Tickets
-from main.serializers import MoviesSerializer, MovieListSerializer, CinemasSerializer, CinemaListSerializer
+from main.serializers import MoviesSerializer, CinemasSerializer, CinemaListSerializer
 
 
 class MovieList(APIView):
@@ -275,7 +277,11 @@ class LiqPayCallback(APIView):
         if payment_status in ['success', 'sandbox']:
             order.status = Order.OrderStatus.PAID
             order.save()
-            # подальша логіка (можливо квитки на пошту)
+
+            try:
+                send_email(order)
+            except Exception as e:
+                print(f"Виникла помилка при надсиланні квитків: {e}")
 
         elif payment_status in ['error', 'failed', 'failure']:
             order.status = Order.OrderStatus.FAILED

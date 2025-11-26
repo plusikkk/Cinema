@@ -31,17 +31,16 @@ class Actors(models.Model):
         verbose_name_plural = 'Актори'
         ordering = ['name']
 
-
     # ЗНАЧОК ДО ФІЛЬМІВ З ДОП ІНФОЮ ПРО ЗНИЖКИ ПОКАЗИ І ТД
 class MovieBadges(models.Model):
-    name = models.CharField('Текс значка', max_length=100, help_text='Новинка, IMAX, Спецпоказ')
+    name = models.CharField('Текст значка', max_length=100, help_text='Новинка, IMAX, Спецпоказ')
 
     def __str__(self):
         return self.name
 
     class Meta:
-        verbose_name = 'Значок'
-        verbose_name_plural = 'Значки'
+        verbose_name = 'Значок фільму'
+        verbose_name_plural = 'Значки фільму'
 
 
 class Movies(models.Model):
@@ -66,7 +65,7 @@ class Movies(models.Model):
     genres = models.ManyToManyField(Genres, verbose_name='Жанр', related_name='movies')
     director = models.CharField('Режисер', max_length=100)
     actors = models.ManyToManyField(Actors, verbose_name='Актори', related_name='movies')
-    badges = models.ManyToManyField(MovieBadges, verbose_name='Значок/Статус')
+    badges = models.ManyToManyField(MovieBadges, verbose_name='Значок/Статус фільму')
 
     def __str__(self):
         return self.title
@@ -84,10 +83,36 @@ class Movies(models.Model):
         verbose_name_plural = 'Фільми'
         ordering = ['-release_date']
 
+    # ЗНАЧОК ДО КІНОТЕАТРІВ З МІСТАМИ
+class CityBadges(models.Model):
+    name = models.CharField('Місто', max_length=100)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Місто'
+        verbose_name_plural = 'Міста'
+
+    # ЗНАЧОК ДО КІНОТЕАТРІВ З ДОП ІНФОЮ ПРО ЗРУЧНОСТІ ПОСЛУГИ І ТД
+class CinemaBadges(models.Model):
+    name = models.CharField('Текст значка', max_length=100, help_text='Parking, IMAX, LUX')
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Значок кінотеатру'
+        verbose_name_plural = 'Значки кінотеатру'
+
 class Cinemas(models.Model):
     name = models.CharField('Назва', max_length=100)
     description = models.TextField('Опис')
     address = models.CharField('Адреса', max_length=250)
+    photo = URLField('Фото', max_length=1000, blank=True)
+    badges = models.ManyToManyField(CinemaBadges, verbose_name='Значок/Статус кінотеатру')
+    city = models.ForeignKey(CityBadges, on_delete=models.PROTECT, verbose_name='Місто')
+
 
     #Для інтеграції апі гугл карт
     latitude = models.DecimalField(

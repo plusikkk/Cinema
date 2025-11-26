@@ -31,19 +31,25 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='Cinemas',
+            name='CinemaBadges',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100, verbose_name='Назва')),
-                ('description', models.TextField(verbose_name='Опис')),
-                ('address', models.CharField(max_length=250, verbose_name='Адреса')),
-                ('latitude', models.DecimalField(blank=True, decimal_places=6, max_digits=9, null=True, validators=[django.core.validators.MinValueValidator(-90), django.core.validators.MaxValueValidator(90)], verbose_name='Широта')),
-                ('longitude', models.DecimalField(blank=True, decimal_places=6, max_digits=9, null=True, validators=[django.core.validators.MinValueValidator(-180), django.core.validators.MaxValueValidator(180)], verbose_name='Довгота')),
+                ('name', models.CharField(help_text='Parking, IMAX, LUX', max_length=100, verbose_name='Текст значка')),
             ],
             options={
-                'verbose_name': 'Кінотеатр',
-                'verbose_name_plural': 'Кінотеатри',
-                'ordering': ['name'],
+                'verbose_name': 'Значок кінотеатру',
+                'verbose_name_plural': 'Значки кінотеатру',
+            },
+        ),
+        migrations.CreateModel(
+            name='CityBadges',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=100, verbose_name='Місто')),
+            ],
+            options={
+                'verbose_name': 'Місто',
+                'verbose_name_plural': 'Міста',
             },
         ),
         migrations.CreateModel(
@@ -62,12 +68,36 @@ class Migration(migrations.Migration):
             name='MovieBadges',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='Новинка, IMAX, Спецпоказ', max_length=100, verbose_name='Текс значка')),
+                ('name', models.CharField(help_text='Новинка, IMAX, Спецпоказ', max_length=100, verbose_name='Текст значка')),
             ],
             options={
-                'verbose_name': 'Значок',
-                'verbose_name_plural': 'Значки',
+                'verbose_name': 'Значок фільму',
+                'verbose_name_plural': 'Значки фільму',
             },
+        ),
+        migrations.CreateModel(
+            name='Cinemas',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=100, verbose_name='Назва')),
+                ('description', models.TextField(verbose_name='Опис')),
+                ('address', models.CharField(max_length=250, verbose_name='Адреса')),
+                ('photo', models.URLField(blank=True, max_length=1000, verbose_name='Фото')),
+                ('latitude', models.DecimalField(blank=True, decimal_places=6, max_digits=9, null=True, validators=[django.core.validators.MinValueValidator(-90), django.core.validators.MaxValueValidator(90)], verbose_name='Широта')),
+                ('longitude', models.DecimalField(blank=True, decimal_places=6, max_digits=9, null=True, validators=[django.core.validators.MinValueValidator(-180), django.core.validators.MaxValueValidator(180)], verbose_name='Довгота')),
+                ('badges', models.ManyToManyField(to='main.cinemabadges', verbose_name='Значок/Статус кінотеатру')),
+                ('city', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='main.citybadges', verbose_name='Місто')),
+            ],
+            options={
+                'verbose_name': 'Кінотеатр',
+                'verbose_name_plural': 'Кінотеатри',
+                'ordering': ['name'],
+            },
+        ),
+        migrations.AddField(
+            model_name='cinemabadges',
+            name='city',
+            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='main.citybadges', verbose_name='Місто'),
         ),
         migrations.CreateModel(
             name='Halls',
@@ -99,7 +129,7 @@ class Migration(migrations.Migration):
                 ('duration', models.PositiveIntegerField(validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(500)], verbose_name='Тривалість (хвилини)')),
                 ('director', models.CharField(max_length=100, verbose_name='Режисер')),
                 ('actors', models.ManyToManyField(related_name='movies', to='main.actors', verbose_name='Актори')),
-                ('badges', models.ManyToManyField(to='main.moviebadges', verbose_name='Значок/Статус')),
+                ('badges', models.ManyToManyField(to='main.moviebadges', verbose_name='Значок/Статус фільму')),
                 ('genres', models.ManyToManyField(related_name='movies', to='main.genres', verbose_name='Жанр')),
             ],
             options={
