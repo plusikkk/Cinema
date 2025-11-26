@@ -17,10 +17,21 @@ class ActorsSerializer(serializers.ModelSerializer):
         model = Actors
         fields = '__all__'
 
+    # ЗНАЧКИ
 class MovieBadgesSerializer(serializers.ModelSerializer):
     class Meta:
         model = MovieBadges
+        fields = ['id', 'name', 'description']
+
+class CityBadgesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CityBadges
         fields = '__all__'
+
+class CinemaBadgesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CinemaBadges
+        fields = ['id', 'name',]
 
 class MovieListSerializer(serializers.ModelSerializer):
     class Meta:
@@ -49,25 +60,23 @@ class MoviesSerializer(serializers.ModelSerializer):
         model = Movies
         fields = ['id', 'title', 'badges', 'age_category', 'description', 'trailer_url',
                   'poster_url', 'rating', 'release_date', 'duration', 'director',
-                  'genres', 'actors', 'genre_ids', 'actor_ids']
+                  'genres', 'actors', 'genre_ids', 'actor_ids', 'end_date']
+
+class CinemaInHallSerializer(serializers.ModelSerializer):
+    badges = CinemaBadgesSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Cinemas
+        fields = ['id', 'name', 'badges']
+
 
 class HallsSerializer(serializers.ModelSerializer):
-    cinema = serializers.StringRelatedField()
+    cinema = CinemaInHallSerializer(read_only=True)
 
     class Meta:
         model = Halls
         fields = ['id', 'name', 'cinema']
         # не вказувала 'number_of_seats'
-
-class CityBadgesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CityBadges
-        fields = '__all__'
-
-class CinemaBadgesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CinemaBadges
-        fields = '__all__'
 
 class CinemaListSerializer(serializers.ModelSerializer):
     badges = CinemaBadgesSerializer(many=True, read_only=True)

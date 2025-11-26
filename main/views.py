@@ -18,7 +18,7 @@ from rest_framework.pagination import PageNumberPagination
 
 from main.email_utils import send_email
 from main.models import Movies, Cinemas, Sessions, Seats, Order, Tickets
-from main.serializers import MoviesSerializer, CinemasSerializer, CinemaListSerializer
+from main.serializers import MoviesSerializer, CinemasSerializer, CinemaListSerializer, SessionsSerializer
 
 
 class MovieList(APIView):
@@ -95,7 +95,11 @@ class RandomMovie(APIView):
         family = request.data.get('family')
 
         if movie_type == 'animation': # Мультфільми
-            movies = movies.filter(genres__name__icontains='animation')
+            movies = movies.filter(
+                Q(genres__name__icontains='мультфільм') |
+                Q(genres__name__icontains='анімація') |
+                Q(genres__name__icontains='animation')
+            )
 
         if family == 'family': # Сімейні фільми до 16+
             movies = movies.filter(age_category__lt=16)
@@ -146,6 +150,21 @@ class MovieDetail(APIView):
         movie = self.get_object(pk)
         movie.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SessionList(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, format=None):
+        queryset = Sessions.objects.filter(is_active=True, start_time__gte=timezone.now())
+
+        movie_id = request.query_params.get('movie')
+        if movie_id is not None:
+            queryset = queryset.filter(movie__id=movie_id)
+
+        queryset = queryset.order_by('start_time')
+        serializer = SessionsSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 class CinemaList(APIView):
     def get_permissions(self):

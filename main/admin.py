@@ -32,8 +32,8 @@ class TicketsInline(admin.TabularInline):
 
 @admin.register(MovieBadges)
 class MovieBadgesAdmin(admin.ModelAdmin):
-    list_display = ('name',)
-    search_fields = ('name',)
+    list_display = ('name', 'description')
+    search_fields = ('name', 'description')
 
 @admin.register(Movies)
 class MovieAdmin(admin.ModelAdmin):
@@ -64,8 +64,8 @@ class CinemaAdmin(admin.ModelAdmin):
     filter_horizontal = ('badges',)
 
     def get_city(self, obj):
-        return ', '.join([b.name for b in obj.badges.all()])
-    get_city.short_description = 'Значки міста'
+        return obj.city.name if obj.city else '-'
+    get_city.short_description = 'Місто'
 
     def get_badges(self, obj):
         return ', '.join([b.name for b in obj.badges.all()])
@@ -73,24 +73,36 @@ class CinemaAdmin(admin.ModelAdmin):
 
 @admin.register(Halls)
 class HallAdmin(admin.ModelAdmin):
-    list_display = ('name', 'cinema', 'number_of_seats')
+    list_display = ('get_full_name', 'cinema', 'number_of_seats')
     list_filter = ('cinema',)
     search_fields = ('name', 'cinema__name')
     inlines = [SeatInline]
 
+    @admin.display(description='Зала (Кінотеатр)', ordering='cinema_name')
+    def get_full_name(self, obj):
+        return f"{obj.cinema.name} - {obj.name}"
+
 @admin.register(Sessions)
 class SessionAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'movie', 'hall', 'start_time', 'end_time', 'price', 'is_active')
+    list_display = ('get_session_name', 'movie', 'hall', 'start_time', 'end_time', 'price', 'is_active')
     list_filter = ('start_time','end_time', 'hall__cinema', 'movie', 'is_active')
     search_fields = ('movie__title', 'hall__name')
     autocomplete_fields = ['movie', 'hall']
 
+    @admin.display(description='Сеанс', ordering='-start_time')
+    def get_session_name(self, obj):
+        return f"{obj.movie.title} ({obj.hall.cinema.name})"
+
 @admin.register(Seats)
 class SeatAdmin(admin.ModelAdmin):
-    list_display = ('id', '__str__', 'hall')
+    list_display = ('id', 'get_seat_location', 'hall')
     list_filter = ('hall__cinema', 'hall')
     search_fields = ('hall__name', 'hall__cinema__name', 'row', 'num')
     autocomplete_fields = ['hall']
+
+    @admin.display(description='Місце', ordering='row')
+    def get_seat_location(self, obj):
+        return f"Ряд {obj.row}, Місце {obj.num}"
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
