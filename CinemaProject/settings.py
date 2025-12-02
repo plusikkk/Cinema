@@ -27,10 +27,10 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'ccoonnel@gmail.com'
-EMAIL_HOST_PASSWORD = 'КЛЮЧ'
+EMAIL_HOST_PASSWORD = 'KEY'
 
-LIQPAY_PUBLIC_KEY = "КЛЮЧ"
-LIQPAY_PRIVATE_KEY = "КЛЮЧ"
+LIQPAY_PUBLIC_KEY = "KEY"
+LIQPAY_PRIVATE_KEY = "KEY"
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'overlate-unmorbidly-gwenda.ngrok-free.dev'] #ЗАМІНИТИ ПРИ НАСТУПНОМУ ЗАПУСКУ
 
