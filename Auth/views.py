@@ -1,11 +1,15 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .models import AuthCode
 from .serializers import UserSerializer
 from rest_framework import generics, status
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -25,33 +29,43 @@ class CreateUserView(generics.CreateAPIView):
 
         try:
             send_act_email(user, request)
-            return Response({"message": "User created successfully. Check email to activate your account"}, status=status.HTTP_201_CREATED)
+            return Response({"message": "User created successfully. Code sent to email", "email": user.email}, status=status.HTTP_201_CREATED)
         except Exception as e:
             user.delete()
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ActivationView(APIView):
     permission_classes = [AllowAny]
-    def get(self, request, uidb64, token):
-        try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            user = None
+    def post(self, request):
+        email = request.data.get('email')
+        code = request.data.get('code')
 
-        if user is not None and default_token_generator.check_token(user, token):
-            user.is_active = True
-            user.save()
-            refresh = RefreshToken.for_user(user)
-            return Response({
+        if not email or not code:
+            return Response({"error": "Email and Code is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+            activation_record = AuthCode.objects.get(user=user)
+        except (User.DoesNotExist, AuthCode.DoesNotExist):
+            return Response({"error": "User or code not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if activation_record.code != code:
+            return Response({"error": "Invalid code"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if timezone.now() > activation_record.created_at > timedelta(minutes=3):
+            return Response({"error": "Code has expired"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.is_active = True
+        user.save()
+        activation_record.delete()
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
                 "message": "Email confirmed",
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
                 "username": user.username,
                              }, status=status.HTTP_200_OK)
-        else:
-            return Response({"error": "Invalid activation link"}, status=status.HTTP_400_BAD_REQUEST)
-
 
 class ManageUserView(generics.RetrieveUpdateAPIView):
    serializer_class = UserSerializer
