@@ -40,6 +40,17 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Це ім`я вже зайняте')
         return value
 
+    def validate_email(self, value):
+        User = get_user_model()
+        if self.instance and self.instance.email == value:
+            return value
+
+        user_exists = User.objects.filter(email__iexact=value).first()
+
+        if user_exists:
+            if not user_exists.is_active:
+                raise serializers.ValidationError('Ця електронна адреса вже зайнята')
+        return value
 
     def update(self, instance, validated_data):
         validated_data.pop('password_check', None)

@@ -23,6 +23,28 @@ class CreateUserView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        existing_user = User.objects.filter(email=email).first() or User.objects.filter(username=username).first()
+
+        if existing_user:
+            if not existing_user.is_active:
+                existing_user.username = username
+                existing_user.email = email
+                existing_user.set_password(password)
+                existing_user.save()
+
+                try:
+                    send_act_email(existing_user, request)
+                    return Response({"message": "New activation code sent", "email": existing_user.email}, status=status.HTTP_200_OK)
+                except Exception as e:
+                    return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            else:
+                return Response({"message": "User already exists", "email": email}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -52,7 +74,7 @@ class ActivationView(APIView):
         if activation_record.code != code:
             return Response({"error": "Invalid code"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if timezone.now() > activation_record.created_at > timedelta(minutes=3):
+        if (timezone.now() - activation_record.created_at) > timedelta(minutes=3):
             return Response({"error": "Code has expired"}, status=status.HTTP_400_BAD_REQUEST)
 
         user.is_active = True
@@ -66,6 +88,23 @@ class ActivationView(APIView):
                 "refresh": str(refresh),
                 "username": user.username,
                              }, status=status.HTTP_200_OK)
+
+class ResendCodeView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({"error": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.get(email=email)
+            if user.is_active:
+                return Response({"message": "Account has already active. Just log in."}, status=status.HTTP_400_BAD_REQUEST)
+            send_act_email(user, request)
+            return Response({"message": "New code sent"}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ManageUserView(generics.RetrieveUpdateAPIView):
    serializer_class = UserSerializer
