@@ -65,7 +65,6 @@ class CinemaBadges(models.Model):
         verbose_name = 'Значок кінотеатру'
         verbose_name_plural = 'Значки кінотеатру'
 
-
 class Movies(models.Model):
     title = models.CharField('Назва фільму', max_length=200)
     age_category = models.PositiveSmallIntegerField('Вікова категорія',

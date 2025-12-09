@@ -11,7 +11,6 @@ class HallInline(admin.TabularInline):
     extra = 1
     ordering = ('name',)
 
-
 class SeatInline(admin.TabularInline):
     model = Seats
     extra = 0

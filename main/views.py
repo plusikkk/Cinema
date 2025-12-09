@@ -80,8 +80,6 @@ class MoviesPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 24
 
-
-
     # РАНДОМАЙЗЕР
 class RandomMovie(APIView):
     permission_classes = [AllowAny]
@@ -151,7 +149,6 @@ class MovieDetail(APIView):
         movie.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
 class SessionList(APIView):
     permission_classes = [AllowAny]
 
@@ -183,8 +180,6 @@ class CinemaList(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 class CinemaDetail(APIView):
     def get_permissions(self):

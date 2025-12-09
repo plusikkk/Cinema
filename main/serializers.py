@@ -69,7 +69,6 @@ class CinemaInHallSerializer(serializers.ModelSerializer):
         model = Cinemas
         fields = ['id', 'name', 'badges']
 
-
 class HallsSerializer(serializers.ModelSerializer):
     cinema = CinemaInHallSerializer(read_only=True)
 
@@ -113,7 +112,6 @@ class SeatsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Seats
         fields = ['id', 'num', 'row', 'hall']
-
 
 class TicketsSerializer(serializers.ModelSerializer):
     seat = SeatsSerializer(read_only=True)
