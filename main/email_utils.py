@@ -7,30 +7,40 @@ def send_email(order):
     if not recipient_email:
         return False
 
+    info = tickets[0]
+
     subject = f"Ваші квитки на фільм {tickets[0].session.movie.title}"
     message_lines = [
         f"Вітаємо, {order.user.username}!",
-        "Дякуємо за ваше замовлення. Нижче прикріпляємо деталі ваших квитків:"
+        "Дякуємо за ваше замовлення. Нижче прикріпляємо деталі ваших квитків:",
+        " ",
+        f"Фільм: {info.session.movie.title}",
+        f"Кінотеатр: {info.session.hall.cinema.name}",
+        f"Початок сеансу: {info.session.start_time.strftime('%Y-%m-%d %H:%M')}",
+        "Ваші місця:"
     ]
+
     for ticket in tickets:
-        message_lines.append(f"Фільм: {ticket.session.movie.title}")
-        message_lines.append(f"Кінотеатр: {ticket.session.hall.cinema.name}")
-        message_lines.append(f"Початок сеансу: {ticket.session.start_time.strftime('%Y-%m-%d %H:%M')}")
         message_lines.append(f"Ряд {ticket.seat.row}, Місце {ticket.seat.num}")
-        message_lines.append(f"Ціна: {ticket.price} UAH")
 
-        full_message = "\n".join(message_lines)
+    message_lines.append("")
+    message_lines.append(f"Загальна сума: {order.total_amount} UAH")
 
-        try:
-            send_mail(
-                subject,
-                full_message,
-                settings.EMAIL_HOST_USER,
-                [recipient_email],
-                fail_silently=False,
-            )
-            print(f"Квитки успішно надіслано на {recipient_email}")
-            return True
-        except Exception as e:
-            print(f"Виникла помилка при надсиланні квитків: {e}")
-            return False
+    if order.bonuses_used > 0:
+        message_lines.append(f"(Витрачено бонусів: {order.bonuses_used})")
+
+    full_message = "\n".join(message_lines)
+
+    try:
+        send_mail(
+            subject,
+            full_message,
+            settings.EMAIL_HOST_USER,
+            [recipient_email],
+            fail_silently=False,
+        )
+        print(f"Квитки успішно надіслано на {recipient_email}")
+        return True
+    except Exception as e:
+        print(f"Виникла помилка при надсиланні квитків: {e}")
+        return False

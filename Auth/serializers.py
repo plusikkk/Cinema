@@ -9,10 +9,11 @@ class UserSerializer(serializers.ModelSerializer):
     password_check = serializers.CharField(write_only=True, max_length=50)
     password = serializers.CharField(write_only=True, validators=[validate_password], max_length=50)
     email = serializers.EmailField(validators=[EmailValidator()])
+    bonus_balance = serializers.IntegerField(source='profile.bonus_balance', read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'password', 'password_check']
+        fields = ['id', 'username', 'email', 'password', 'password_check', 'bonus_balance']
         extra_kwargs = {'username': {'required': True, 'max_length': 50}}
 
     def validate(self, data):

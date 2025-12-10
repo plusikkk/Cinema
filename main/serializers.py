@@ -69,7 +69,6 @@ class CinemaInHallSerializer(serializers.ModelSerializer):
         model = Cinemas
         fields = ['id', 'name', 'badges']
 
-
 class HallsSerializer(serializers.ModelSerializer):
     cinema = CinemaInHallSerializer(read_only=True)
 
@@ -114,7 +113,6 @@ class SeatsSerializer(serializers.ModelSerializer):
         model = Seats
         fields = ['id', 'num', 'row', 'hall']
 
-
 class TicketsSerializer(serializers.ModelSerializer):
     seat = SeatsSerializer(read_only=True)
     session = SessionsSerializer(read_only=True)
@@ -144,7 +142,7 @@ class OrdersSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'user', 'created_at', 'total_amount', 'status', 'liqpay_order_id', 'tickets']
+        fields = ['id', 'user', 'created_at', 'total_amount', 'status', 'liqpay_order_id', 'tickets', 'bonuses_used', 'bonuses_earned']
 
     # Одразу вписує юзера при покупці квитка
     def create(self, validated_data):

@@ -5,7 +5,11 @@ from django.db import models
 from django.db.models import ForeignKey
 from django.db.models.fields import CharField, URLField, IntegerField
 from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
+
+from Auth.models import User
 
 
 class Genres(models.Model):
@@ -64,7 +68,6 @@ class CinemaBadges(models.Model):
     class Meta:
         verbose_name = 'Значок кінотеатру'
         verbose_name_plural = 'Значки кінотеатру'
-
 
 class Movies(models.Model):
     title = models.CharField('Назва фільму', max_length=200)
@@ -220,6 +223,8 @@ class Order(models.Model):
     total_amount = models.IntegerField('Загальна сума', validators=[MinValueValidator(0)])
     status = models.CharField('Статус оплати', max_length=15, choices=OrderStatus.choices, default=OrderStatus.PENDING)
     liqpay_order_id = models.CharField('ID замовлення (LiqPay)', max_length=255, unique=True, db_index=True, default=uuid.uuid4)
+    bonuses_earned = models.PositiveIntegerField('Нараховані бонуси', default=0)
+    bonuses_used = models.PositiveIntegerField('Використані бонуси', default=0)
 
     def __str__(self):
         return f"Замовлення #{self.id} від {self.user.username} ({self.get_status_display()})"
@@ -244,6 +249,37 @@ class Tickets(models.Model):
         verbose_name_plural = 'Квитки'
         ordering = ['-order__created_at']
         unique_together = ['session', 'seat']
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    bonus_balance = models.PositiveIntegerField('Бонуси', default=0)
+
+    def __str__(self):
+        return f"Профіль {self.user.username}"
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
+
+class BonusTransaction(models.Model):
+    class TransactionType(models.TextChoices):
+        ACCRUAL = 'accrual', 'Accrual'
+        REDEMPTION = 'redemption', 'Redemption'
+        REFUNDED = 'refunded', 'Refunded'
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bonuses_transactions')
+    amount = models.IntegerField('Кількість бонусів')
+    transaction_type = models.CharField(max_length=20, choices=TransactionType.choices, default=TransactionType.choices)
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='bonuses_transactions')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.get_transaction_type_display()}: {self.amount} - {self.user}"
 
 
 
