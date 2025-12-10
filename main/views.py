@@ -162,6 +162,10 @@ class SessionList(APIView):
         if movie_id is not None:
             queryset = queryset.filter(movie__id=movie_id)
 
+        cinema_id = request.query_params.get('cinema')
+        if cinema_id is not None:
+            queryset = queryset.filter(hall__cinema_id=cinema_id)
+
         queryset = queryset.order_by('start_time')
         serializer = SessionsSerializer(queryset, many=True)
         return Response(serializer.data)
