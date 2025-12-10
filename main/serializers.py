@@ -1,11 +1,9 @@
 from rest_framework import serializers
 from .models import Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, Order, MovieBadges, CinemaBadges, \
-    CityBadges
+    CityBadges, UserProfile
+from  django.contrib.auth import get_user_model
 
-
-# Я не розписувала поля вручну де це не було необхідно\неважливо
-# Також деякі поля не писала на свій розсуд
-# Якщо будуть якісь проблеми або не згодні кажіть
+User = get_user_model()
 
 class GenresSerializer(serializers.ModelSerializer):
     class Meta:
@@ -150,6 +148,29 @@ class OrdersSerializer(serializers.ModelSerializer):
         validated_data['user'] = user
         return super().create(validated_data)
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['birth_date', 'gender', 'bonus_balance']
+        read_only_fields = ['bonus_balance']
 
+class UserSerializer(serializers.ModelSerializer):
+    profile = UserProfileSerializer(required=False)
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'profile']
+        read_only_fields = ['id']
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('profile', None)
+        instance = super().update(instance, validated_data)
+
+        if profile_data:
+            profile = instance.profile
+            for attr, value in profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
+
+        return instance
 
 

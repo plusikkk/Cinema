@@ -142,19 +142,20 @@ admin.site.register(Actors)
 class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
-    verbose_name_plural = 'Профіль (Бонуси)'
+    verbose_name_plural = 'Профіль'
+    fk_name = 'user'
 
+    fields = ('bonus_balance', 'birth_date', 'gender')
+    readonly_fields = ('bonus_balance',)
 
 class UserAdmin(BaseUserAdmin):
     inlines = (UserProfileInline,)
-
     list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'get_bonus_balance')
 
     def get_bonus_balance(self, obj):
         if hasattr(obj, 'profile'):
             return obj.profile.bonus_balance
         return 0
-
     get_bonus_balance.short_description = 'Бонуси'
 
 if admin.site.is_registered(User):
