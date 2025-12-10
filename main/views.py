@@ -2,6 +2,7 @@ import json
 from base64 import b64decode
 from random import choice
 from liqpay import LiqPay
+from datetime import date
 
 from django.conf import settings
 from django.db import transaction
@@ -14,7 +15,6 @@ from rest_framework.permissions import IsAdminUser, AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
-
 
 from main.email_utils import send_email
 from main.models import Movies, Cinemas, Sessions, Seats, Order, Tickets, BonusTransaction
@@ -224,6 +224,22 @@ class CreateOrder(APIView):
             return Response({"error": 'Потрібно вказати session_id and seat_id'}, status=status.HTTP_400_BAD_REQUEST)
         try:
             session = Sessions.objects.get(id=session_id, is_active=True)
+
+            # ПЕРЕВІРКА НА ВІК
+            movie = session.movie
+            user = request.user
+
+            if movie.age_category >= 16:
+                if not hasattr(user, 'profile') or not user.profile.birth_date: # Якщо що attr -> attribute
+                    return Response({"error": f"Фільм має вікове обмеження {movie.age_category}+. Для купівлі квитка необхідно вказати дату народження в профілі."}, status=status.HTTP_403_FORBIDDEN)
+                else:
+                    birth_date = user.profile.birth_date
+                    today = date.today()
+                    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+
+                    if age < movie.age_category:
+                        return Response({"error": f"Фільм доступний для перегляду лише з {movie.age_category} років."}, status=status.HTTP_403_FORBIDDEN)
+
             seats = Seats.objects.filter(id__in=seat_id, hall=session.hall)
 
             if len(seats) != len(seat_id):

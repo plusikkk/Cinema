@@ -251,8 +251,12 @@ class Tickets(models.Model):
         unique_together = ['session', 'seat']
 
 class UserProfile(models.Model):
+    GENDER_CHOICES = [('M', 'Чоловіча'), ('F', 'Жіноча'), ('O', 'Інше'), ('N', 'Не бажаю вказувати')]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     bonus_balance = models.PositiveIntegerField('Бонуси', default=0)
+    birth_date = models.DateField('Дата народження', blank=True, null=True)
+    gender = models.CharField('Стать', max_length=20, choices=GENDER_CHOICES, blank=True)
 
     def __str__(self):
         return f"Профіль {self.user.username}"
