@@ -1,10 +1,13 @@
 from django.contrib import admin
-from django.urls import reverse
-from django.utils.html import format_html
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.admin.sites import NotRegistered
 
 from .models import (
-    Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, Order, MovieBadges, CinemaBadges, CityBadges
+    Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, Order, MovieBadges, CinemaBadges, CityBadges,
+    UserProfile, BonusTransaction
 )
+
 
 class HallInline(admin.TabularInline):
     model = Halls
@@ -135,4 +138,35 @@ class TicketAdmin(admin.ModelAdmin):
 
 admin.site.register(Genres)
 admin.site.register(Actors)
+
+class UserProfileInline(admin.StackedInline):
+    model = UserProfile
+    can_delete = False
+    verbose_name_plural = 'Профіль (Бонуси)'
+
+
+class UserAdmin(BaseUserAdmin):
+    inlines = (UserProfileInline,)
+
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'get_bonus_balance')
+
+    def get_bonus_balance(self, obj):
+        if hasattr(obj, 'profile'):
+            return obj.profile.bonus_balance
+        return 0
+
+    get_bonus_balance.short_description = 'Бонуси'
+
+if admin.site.is_registered(User):
+    admin.site.unregister(User)
+
+admin.site.register(User, UserAdmin)
+
+@admin.register(BonusTransaction)
+class BonusTransactionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'amount', 'transaction_type', 'created_at', 'order')
+    list_filter = ('transaction_type', 'created_at')
+    search_fields = ('user__username', 'user__email')
+    readonly_fields = ('created_at',)
+
 

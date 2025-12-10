@@ -142,7 +142,7 @@ class OrdersSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'user', 'created_at', 'total_amount', 'status', 'liqpay_order_id', 'tickets']
+        fields = ['id', 'user', 'created_at', 'total_amount', 'status', 'liqpay_order_id', 'tickets', 'bonuses_used', 'bonuses_earned']
 
     # Одразу вписує юзера при покупці квитка
     def create(self, validated_data):

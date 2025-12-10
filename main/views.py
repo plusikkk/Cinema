@@ -17,7 +17,7 @@ from rest_framework.pagination import PageNumberPagination
 
 
 from main.email_utils import send_email
-from main.models import Movies, Cinemas, Sessions, Seats, Order, Tickets
+from main.models import Movies, Cinemas, Sessions, Seats, Order, Tickets, BonusTransaction
 from main.serializers import MoviesSerializer, CinemasSerializer, CinemaListSerializer, SessionsSerializer
 
 
@@ -218,6 +218,7 @@ class CreateOrder(APIView):
     def post(self, request, format=None):
         session_id = request.data.get('session_id')
         seat_id = request.data.get('seat_id')
+        use_bonuses = request.data.get('use_bonuses', False)
 
         if not session_id or not seat_id:
             return Response({"error": 'Потрібно вказати session_id and seat_id'}, status=status.HTTP_400_BAD_REQUEST)
@@ -228,8 +229,33 @@ class CreateOrder(APIView):
             if len(seats) != len(seat_id):
                 return Response({"error": 'Обрані місця невірні'}, status=status.HTTP_400_BAD_REQUEST)
 
-            total_amount = session.price * len(seats)
-            order = Order.objects.create(user=request.user, total_amount=total_amount, status=Order.OrderStatus.PENDING)
+            original_amount = session.price * len(seats)
+            amount_to_pay = original_amount
+            bonuses_used = 0
+
+            if use_bonuses:
+                user_balance = request.user.profile.bonus_balance
+                if user_balance > 0:
+                    bonuses_used = min(user_balance, original_amount)
+                    amount_to_pay = original_amount - bonuses_used
+
+            order = Order.objects.create(
+                user=request.user,
+                total_amount=amount_to_pay,
+                bonuses_used=bonuses_used,
+                status=Order.OrderStatus.PENDING
+            )
+
+            if bonuses_used > 0:
+                request.user.profile.bonus_balance -= bonuses_used
+                request.user.profile.save()
+
+                BonusTransaction.objects.create(
+                    user=request.user,
+                    amount=-bonuses_used,
+                    transaction_type=BonusTransaction.TransactionType.REDEMPTION
+                )
+
             tickets_create = []
             for seat in seats:
                 tickets_create.append(Tickets(order=order, seat=seat, session=session, price=session.price))
@@ -238,9 +264,14 @@ class CreateOrder(APIView):
             liqpay = LiqPay(settings.LIQPAY_PUBLIC_KEY, settings.LIQPAY_PRIVATE_KEY)
             base_url = "https://overlate-unmorbidly-gwenda.ngrok-free.dev" #ЗАМІНИТИ ПРИ НАСТУПНОМУ ЗАПУСКУ
 
+            if amount_to_pay == 0:
+                order.status = Order.OrderStatus.PAID
+                order.save()
+                return Response({"status": "success", "message": "Paid by bonuses"}, status=status.HTTP_201_CREATED)
+
             params = {
                 "action": "pay",
-                "amount": str(total_amount),
+                "amount": str(amount_to_pay),
                 "currency": "UAH",
                 "description": f"Tickets for {session.movie.title} (order #{order.id})",
                 "order_id": str(order.liqpay_order_id),
@@ -289,8 +320,7 @@ class LiqPayCallback(APIView):
             return Response(status=status.HTTP_200_OK) #щоб не отримувати повторних запитів від лікпею
 
         if payment_status in ['success', 'sandbox']:
-            order.status = Order.OrderStatus.PAID
-            order.save()
+            confirm_payment(order.id)
 
             try:
                 send_email(order)
@@ -298,10 +328,52 @@ class LiqPayCallback(APIView):
                 print(f"Виникла помилка при надсиланні квитків: {e}")
 
         elif payment_status in ['error', 'failed', 'failure']:
-            order.status = Order.OrderStatus.FAILED
-            order.save()
+            cancel_bonuses_payment(order.id)
             # подальша логіка (можливо видалення квитків які не пройшли оплату)
         return Response(status=status.HTTP_200_OK)
+
+@transaction.atomic
+def confirm_payment(order_id):
+    try:
+        order = Order.objects.get(id=order_id)
+    except Order.DoesNotExist:
+        return
+
+    if order.status == Order.OrderStatus.PAID:
+        return
+
+    order.status = Order.OrderStatus.PAID
+    bonus_amount = int(order.total_amount * 0.03)
+    order.bonuses_earned = bonus_amount
+    order.save()
+
+    if bonus_amount > 0:
+        user = order.user
+        user.profile.bonus_balance += bonus_amount
+        user.profile.save()
+
+        BonusTransaction.objects.create(user=user, amount=bonus_amount, transaction_type=BonusTransaction.TransactionType.ACCRUAL, order=order)
+
+@transaction.atomic
+def cancel_bonuses_payment(order_id):
+    try:
+        order = Order.objects.get(id=order_id)
+    except Order.DoesNotExist:
+        return
+
+    if order.status == Order.OrderStatus.FAILED:
+        return
+
+    order.status = Order.OrderStatus.FAILED
+    order.save()
+
+    if order.bonuses_used > 0:
+        user = order.user
+        user.profile.bonus_balance += order.bonuses_used
+        user.profile.save()
+
+        BonusTransaction.objects.create(user=user, amount=order.bonuses_used, transaction_type=BonusTransaction.TransactionType.REFUNDED, order=order)
+
 
 
 
