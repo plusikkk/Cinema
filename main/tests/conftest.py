@@ -48,7 +48,7 @@ def badges() -> MovieBadges:
 def movie(genres, actors, badges) -> Movies:
     movie = Movies.objects.create(
         id=1,
-        title="Test Movie 1",
+        title="New Movie",
         age_category="6",
         description="Test Movie description",
         trailer_url="https://example.com/trailer",

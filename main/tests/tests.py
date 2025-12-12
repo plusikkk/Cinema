@@ -159,7 +159,68 @@ def test_delete_movie_admin(api_client, admin, badges, actors, genres, movie) ->
     assert Movies.objects.filter(id=movie.id).exists() is False
 
 @pytest.mark.django_db
-def
+def test_patch_non_existing_movie(api_client, admin,genres,actors,badges ) -> None:
+    api_client.force_authenticate(user=admin)
+
+    response = api_client.patch(reverse("movies-detail", args=[10]),
+                                {
+                                    "title": "New Movie",
+                                    "age_category": 6,
+                                    "description": "Test Movie description",
+                                    "trailer_url": "https://example.com/trailer",
+                                    "poster_url": "https://example.com/poster.jpg",
+                                    "rating": 3,
+                                    "release_date": "2025-01-01",
+                                    "end_date": "2025-12-31",
+                                    "duration": 120,
+                                    "director": "Test Director",
+                                    "genre_ids": [genres.id],
+                                    "actor_ids": [actors.id],
+                                    "badges": [badges.id],
+                                }, format="json" )
+    assert response.status_code == 404
+
+@pytest.mark.django_db
+
+def test_delete_non_existing_movie(api_client, admin,genres,actors,badges ) -> None:
+    api_client.force_authenticate(user=admin)
+    response = api_client.delete(reverse("movies-detail", args=[10]))
+    assert response.status_code == 404
+
+@pytest.mark.django_db
+def test_get_movie_details(api_client, movie,genres,actors,badges) -> None:
+    response = api_client.get(reverse("movies-detail", args=[movie.id]),{
+        "title": "New Movie",
+        "age_category": 6,
+        "description": "Test Movie description",
+        "trailer_url": "https://example.com/trailer",
+        "poster_url": "https://example.com/poster.jpg",
+        "rating": 3,
+        "release_date": "2025-01-01",
+        "duration": 120,
+        "director": "Test Director",
+        "genres": [genres.id],
+        "actors": [actors.id],
+        "badges": [badges.id],
+    }, format="json" )
+
+    assert response.status_code == 200
+    assert response.data["title"] == "New Movie"
+    assert response.data["description"] == "Test Movie description"
+    assert response.data["trailer_url"] == "https://example.com/trailer"
+    assert response.data["poster_url"] == "https://example.com/poster.jpg"
+    assert response.data["rating"] == 5
+    assert response.data["release_date"] == "2025-01-01"
+    assert response.data["duration"] == 120
+    assert response.data["director"] == "Test Director"
+    assert response.data["genres"] == [ {"id": genres.id, "name": genres.name}]
+    assert response.data["actors"] == [ {"id": actors.id, "name": actors.name, "photo": actors.photo}]
+    assert response.data["badges"] == [ {"id": badges.id, "name": badges.name}]
+
+
+
+
+
 
 
 
