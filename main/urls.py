@@ -10,5 +10,5 @@ urlpatterns = [
     path('orders/create/', views.CreateOrder.as_view(), name='create-order'),
     path('payment/callback/', views.LiqPayCallback.as_view(), name='payment-callback'),
     path('random-movie/', views.RandomMovie.as_view(), name='random-movie'),
-    path('api/auth/profile/', views.UpdateUser.as_view(), name='profile-detail'),
+    path('auth/userprofile/', views.UpdateUser.as_view(), name='userprofile-detail'),
 ]
