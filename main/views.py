@@ -17,8 +17,9 @@ from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 
 from main.email_utils import send_email
-from main.models import Movies, Cinemas, Sessions, Seats, Order, Tickets, BonusTransaction
-from main.serializers import MoviesSerializer, CinemasSerializer, CinemaListSerializer, SessionsSerializer
+from main.models import Movies, Cinemas, Sessions, Seats, Order, Tickets, BonusTransaction, UserProfile
+from main.serializers import MoviesSerializer, CinemasSerializer, CinemaListSerializer, SessionsSerializer, \
+    UserSerializer
 
 
 class MovieList(APIView):
@@ -394,7 +395,23 @@ def cancel_bonuses_payment(order_id):
 
         BonusTransaction.objects.create(user=user, amount=order.bonuses_used, transaction_type=BonusTransaction.TransactionType.REFUNDED, order=order)
 
+class UpdateUser(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        UserProfile.objects.get_or_create(user=request.user)
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        user = request.user
+        serializer = UserSerializer(user, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        print("Validation errors:", serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 

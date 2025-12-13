@@ -1,3 +1,5 @@
+from random import choices
+
 from rest_framework import serializers
 from .models import Genres, Actors, Movies, Cinemas, Halls, Sessions, Seats, Tickets, Order, MovieBadges, CinemaBadges, \
     CityBadges, UserProfile
@@ -92,8 +94,8 @@ class CinemasSerializer(serializers.ModelSerializer):
         model = Cinemas
         fields = ['id', 'name', 'description', 'address', 'latitude', 'longitude', 'halls', 'badges', 'photo', 'city']
 
-        def get_coordinates(self, obj):
-            return obj.get_coordinates()
+    def get_coordinates(self, obj):
+        return obj.get_coordinates()
 
 class SessionsSerializer(serializers.ModelSerializer):
     movie = MoviesSerializer(read_only=True)
@@ -149,16 +151,24 @@ class OrdersSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    gender = serializers.ChoiceField(choices=UserProfile.GENDER_CHOICES, required=False, allow_null=True, allow_blank=True)
+    birth_date = serializers.DateField(required=False, allow_null=True)
+
     class Meta:
         model = UserProfile
         fields = ['birth_date', 'gender', 'bonus_balance']
         read_only_fields = ['bonus_balance']
 
+    def validate_gender(self, value):
+        if value == "":
+            return None
+        return value
+
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(required=False)
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'profile']
+        fields = ['id', 'username', 'email', 'profile', 'first_name', 'last_name']
         read_only_fields = ['id']
 
     def update(self, instance, validated_data):
@@ -166,7 +176,7 @@ class UserSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
 
         if profile_data:
-            profile = instance.profile
+            profile, created = UserProfile.objects.get_or_create(user=instance)
             for attr, value in profile_data.items():
                 setattr(profile, attr, value)
             profile.save()
