@@ -1,6 +1,6 @@
 import pytest
 from django.urls import reverse
-from main.models import Movies
+from main.models import Movies, Cinemas
 
 @pytest.mark.django_db
 def test_get_movie_list(api_client,movie) -> None:
@@ -15,13 +15,33 @@ def test_get_movie_empty_list(api_client) -> None:
     assert response.data['results'] == []
     assert response.data['count'] == 0
 
-
-
 @pytest.mark.django_db
 def test_post_movie_admin(api_client, admin, badges,actors,genres) -> None:
     api_client.force_authenticate(user=admin)
     response = api_client.post(reverse('movies-list'), {
-                                   "title": "New Movie",
+        "title": "New Movie",
+        "age_category": 6,
+        "description": "Test Movie description",
+        "trailer_url": "https://example.com/trailer",
+        "poster_url": "https://example.com/poster.jpg",
+        "rating": 5,
+        "release_date": "2025-01-01",
+        "end_date": "2025-12-31",
+        "duration": 120,
+        "director": "Test Director",
+        "genre_ids": [genres.id],
+        "actor_ids": [actors.id],
+        "badges": [badges.id],
+    },format="json")
+    assert response.status_code == 201
+    assert Movies.objects.count() == 1
+    assert Movies.objects.first().title == "New Movie"
+
+@pytest.mark.django_db
+def test_post_movie_regular_user(api_client, user, badges,actors,genres) -> None:
+    api_client.force_authenticate(user=user)
+    response = api_client.post(reverse('movies-list'),
+                               {   "title": "New Movie",
                                    "age_category": 6,
                                    "description": "Test Movie description",
                                    "trailer_url": "https://example.com/trailer",
@@ -34,34 +54,7 @@ def test_post_movie_admin(api_client, admin, badges,actors,genres) -> None:
                                    "genre_ids": [genres.id],
                                    "actor_ids": [actors.id],
                                    "badges":[badges.id],
-                               },format="json")
-
-
-    assert response.status_code == 201
-    assert Movies.objects.count() == 1
-    assert Movies.objects.first().title == "New Movie"
-
-
-@pytest.mark.django_db
-def test_post_movie_regular_user(api_client, user, badges,actors,genres,) -> None:
-    api_client.force_authenticate(user=user)
-    response = api_client.post(reverse('movies-list'),
-                               {
-                                   "title": "New Movie",
-                                   "age_category": 6,
-                                   "description": "Test Movie description",
-                                   "trailer_url": "https://example.com/trailer",
-                                   "poster_url": "https://example.com/poster.jpg",
-                                   "rating": 5,
-                                   "release_date": "2025-01-01",
-                                   "end_date": "2025-12-31",
-                                   "duration": 120,
-                                   "director": "Test Director",
-                                   "genres": [genres.id],
-                                   "actors": [actors.id],
-                                   "badges":[badges.id],
                                }, format="json")
-
 
     assert response.status_code == 403
     assert Movies.objects.count() == 0
@@ -69,24 +62,9 @@ def test_post_movie_regular_user(api_client, user, badges,actors,genres,) -> Non
 @pytest.mark.django_db
 def test_patch_movie_admin(api_client, admin, badges,actors,genres,movie) -> None:
     api_client.force_authenticate(user=admin)
-    response = api_client.patch(reverse("movies-detail",args=[movie.id]),
-                               {
-                                   "title": "New Movie",
-                                   "age_category": 6,
-                                   "description": "Test Movie description",
-                                   "trailer_url": "https://example.com/trailer",
-                                   "poster_url": "https://example.com/poster.jpg",
-                                   "rating": 3,
-                                   "release_date": "2025-01-01",
-                                   "end_date": "2025-12-31",
-                                   "duration": 120,
-                                   "director": "Test Director",
-                                   "genre_ids": [genres.id],
-                                   "actor_ids": [actors.id],
-                                   "badges":[badges.id],
-                               },
-                               format="json"
-                               )
+    response = api_client.patch(reverse("movies-detail",args=[movie.id]),{
+                               "rating":3
+                               },format="json")
 
     assert response.status_code == 200
     assert Movies.objects.first().rating == 3
@@ -96,19 +74,7 @@ def test_patch_movie_regular_user(api_client, user, badges, actors, genres, movi
     api_client.force_authenticate(user=user)
     response = api_client.patch(reverse("movies-detail", args=[movie.id]),
                                 {
-                                    "title": "New Movie",
-                                    "age_category": 6,
-                                    "description": "Test Movie description",
-                                    "trailer_url": "https://example.com/trailer",
-                                    "poster_url": "https://example.com/poster.jpg",
                                     "rating": 3,
-                                    "release_date": "2025-01-01",
-                                    "end_date": "2025-12-31",
-                                    "duration": 120,
-                                    "director": "Test Director",
-                                    "genre_ids": [genres.id],
-                                    "actor_ids": [actors.id],
-                                    "badges": [badges.id],
                                 },format="json" )
 
     assert response.status_code == 403
@@ -116,72 +82,26 @@ def test_patch_movie_regular_user(api_client, user, badges, actors, genres, movi
 @pytest.mark.django_db
 def test_delete_movie_regular_user(api_client, user, badges, actors, genres, movie) -> None:
     api_client.force_authenticate(user=user)
-    response = api_client.delete(reverse("movies-detail", args=[movie.id]),
-                                {
-                                    "title": "New Movie",
-                                    "age_category": 6,
-                                    "description": "Test Movie description",
-                                    "trailer_url": "https://example.com/trailer",
-                                    "poster_url": "https://example.com/poster.jpg",
-                                    "rating": 3,
-                                    "release_date": "2025-01-01",
-                                    "end_date": "2025-12-31",
-                                    "duration": 120,
-                                    "director": "Test Director",
-                                    "genre_ids": [genres.id],
-                                    "actor_ids": [actors.id],
-                                    "badges": [badges.id],
-                                },format="json" )
+    response = api_client.delete(reverse("movies-detail", args=[movie.id]), format= "json" )
 
     assert response.status_code == 403
 
 @pytest.mark.django_db
 def test_delete_movie_admin(api_client, admin, badges, actors, genres, movie) -> None:
     api_client.force_authenticate(user=admin)
-    response = api_client.delete(reverse("movies-detail", args=[movie.id]),
-                                {
-                                    "title": "New Movie",
-                                    "age_category": 6,
-                                    "description": "Test Movie description",
-                                    "trailer_url": "https://example.com/trailer",
-                                    "poster_url": "https://example.com/poster.jpg",
-                                    "rating": 3,
-                                    "release_date": "2025-01-01",
-                                    "end_date": "2025-12-31",
-                                    "duration": 120,
-                                    "director": "Test Director",
-                                    "genre_ids": [genres.id],
-                                    "actor_ids": [actors.id],
-                                    "badges": [badges.id],
-                                },format="json" )
+    response = api_client.delete(reverse("movies-detail", args=[movie.id]),format="json" )
 
     assert response.status_code == 204
     assert Movies.objects.filter(id=movie.id).exists() is False
 
 @pytest.mark.django_db
-def test_patch_non_existing_movie(api_client, admin,genres,actors,badges ) -> None:
+def test_patch_non_existing_movie(api_client, admin,genres,actors,badges,movie ) -> None:
     api_client.force_authenticate(user=admin)
 
-    response = api_client.patch(reverse("movies-detail", args=[10]),
-                                {
-                                    "title": "New Movie",
-                                    "age_category": 6,
-                                    "description": "Test Movie description",
-                                    "trailer_url": "https://example.com/trailer",
-                                    "poster_url": "https://example.com/poster.jpg",
-                                    "rating": 3,
-                                    "release_date": "2025-01-01",
-                                    "end_date": "2025-12-31",
-                                    "duration": 120,
-                                    "director": "Test Director",
-                                    "genre_ids": [genres.id],
-                                    "actor_ids": [actors.id],
-                                    "badges": [badges.id],
-                                }, format="json" )
+    response = api_client.patch(reverse("movies-detail", args=[10]), format="json" )
     assert response.status_code == 404
 
 @pytest.mark.django_db
-
 def test_delete_non_existing_movie(api_client, admin,genres,actors,badges ) -> None:
     api_client.force_authenticate(user=admin)
     response = api_client.delete(reverse("movies-detail", args=[10]))
@@ -189,23 +109,10 @@ def test_delete_non_existing_movie(api_client, admin,genres,actors,badges ) -> N
 
 @pytest.mark.django_db
 def test_get_movie_details(api_client, movie,genres,actors,badges) -> None:
-    response = api_client.get(reverse("movies-detail", args=[movie.id]),{
-        "title": "New Movie",
-        "age_category": 6,
-        "description": "Test Movie description",
-        "trailer_url": "https://example.com/trailer",
-        "poster_url": "https://example.com/poster.jpg",
-        "rating": 3,
-        "release_date": "2025-01-01",
-        "duration": 120,
-        "director": "Test Director",
-        "genres": [genres.id],
-        "actors": [actors.id],
-        "badges": [badges.id],
-    }, format="json" )
+    response = api_client.get(reverse("movies-detail", args=[movie.id]), format="json" )
 
     assert response.status_code == 200
-    assert response.data["title"] == "New Movie"
+    assert response.data["title"] == "Movie 1"
     assert response.data["description"] == "Test Movie description"
     assert response.data["trailer_url"] == "https://example.com/trailer"
     assert response.data["poster_url"] == "https://example.com/poster.jpg"
@@ -216,6 +123,57 @@ def test_get_movie_details(api_client, movie,genres,actors,badges) -> None:
     assert response.data["genres"] == [ {"id": genres.id, "name": genres.name}]
     assert response.data["actors"] == [ {"id": actors.id, "name": actors.name, "photo": actors.photo}]
     assert response.data["badges"] == [ {"id": badges.id, "name": badges.name}]
+
+# тести для пагінації
+@pytest.mark.django_db
+def test_max_page_size_limit_movie_pagination(api_client,movies_pagination):
+    response = api_client.get(reverse("movies-list") + "?page_size=100", format="json")
+    assert response.status_code == 200
+    assert len(response.data["results"]) == 24
+
+@pytest.mark.django_db
+def test_second_page_movie_pagination(api_client,movies_pagination):
+     response = api_client.get(reverse("movies-list") + "?page=2")
+     assert response.status_code == 200
+     assert "results" in response.data
+
+@pytest.mark.django_db
+def test_default_movie_pagination(api_client,movies_pagination):
+    response = api_client.get(reverse("movies-list"),format="json")
+    assert response.status_code == 200
+    assert len(response.data["results"])== 4
+
+#тести для рандомайзеру
+@pytest.mark.django_db
+def test_ramdom_movie(api_client,movie_random):
+    response = api_client.get(reverse("movies-list"),format="json")
+    movie_random()
+    assert response.status_code == 200
+
+
+
+#тести для кіотеатрів
+@pytest.mark.django_db
+def test_get_cinema_list(api_client,cinema)-> None:
+    response = api_client.get(reverse('cinemas-list'), format='json')
+    assert response.status_code == 200
+
+@pytest.mark.django_db
+def test_get_cinema_empty_list(api_client) -> None:
+    response = api_client.get(reverse('cinemas-list'), format='json')
+    assert response.status_code == 200
+    assert response.data == []
+    assert len(response.data) == 0
+
+
+
+
+
+
+
+
+
+
 
 
 
