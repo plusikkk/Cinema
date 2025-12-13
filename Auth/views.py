@@ -27,14 +27,18 @@ class CreateUserView(generics.CreateAPIView):
         username = request.data.get('username')
         password = request.data.get('password')
 
-        existing_user = User.objects.filter(email=email).first() or User.objects.filter(username=username).first()
+        existing_user = User.objects.filter(email__exact=email).first() or User.objects.filter(username__exact=username).first()
 
         if existing_user:
             if not existing_user.is_active:
-                existing_user.username = username
-                existing_user.email = email
-                existing_user.set_password(password)
-                existing_user.save()
+                serializer = self.get_serializer(existing_user, data=request.data, partial=True)
+
+                try:
+                    serializer.is_valid(raise_exception=True)
+                    existing_user = serializer.save()
+                except Exception as e:
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
                 try:
                     send_act_email(existing_user, request)
@@ -43,7 +47,7 @@ class CreateUserView(generics.CreateAPIView):
                     return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             else:
-                return Response({"message": "User already exists", "email": email}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"message": "Користувач з таким email вже існує", "email": email}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
