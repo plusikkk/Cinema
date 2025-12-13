@@ -395,6 +395,9 @@ def cancel_bonuses_payment(order_id):
 
         BonusTransaction.objects.create(user=user, amount=order.bonuses_used, transaction_type=BonusTransaction.TransactionType.REFUNDED, order=order)
 
+    order.tickets.all().delete()
+    print(f"Order canceled #{order.id}")
+    
 class UpdateUser(APIView):
     permission_classes = [IsAuthenticated]
 

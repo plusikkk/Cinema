@@ -40,6 +40,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
 ]
 
+SWAGGER_USE_COMPAT_RENDERERS = False
 
 # Application definition
 

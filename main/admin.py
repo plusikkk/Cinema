@@ -146,7 +146,6 @@ class UserProfileInline(admin.StackedInline):
     fk_name = 'user'
 
     fields = ('bonus_balance', 'birth_date', 'gender')
-    readonly_fields = ('bonus_balance',)
 
 class UserAdmin(BaseUserAdmin):
     inlines = (UserProfileInline,)
