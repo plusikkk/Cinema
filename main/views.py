@@ -19,7 +19,7 @@ from rest_framework.pagination import PageNumberPagination
 from main.email_utils import send_email
 from main.models import Movies, Cinemas, Sessions, Seats, Order, Tickets, BonusTransaction, UserProfile
 from main.serializers import MoviesSerializer, CinemasSerializer, CinemaListSerializer, SessionsSerializer, \
-    UserSerializer, SeatsSerializer
+    UserSerializer, SeatsSerializer, MovieBadgesSerializer
 
 
 class MovieList(APIView):
@@ -439,13 +439,20 @@ class SessionSeatsView(APIView):
             seat['is_occupied'] = seat['id'] in occupied_seat_ids
             seat['price'] = session.price
 
+        badges_serializer = MovieBadgesSerializer(session.movie.badges.all(), many=True)
+
         return Response({
             "movie_title": session.movie.title,
             "cinema_name": session.hall.cinema.name,
             "hall_name": session.hall.name,
             "start_time": session.start_time,
             "seats": seats_data,
-            "session_price": session.price
+            "session_price": session.price,
+            "poster_url": session.movie.poster_url,
+            "badges": badges_serializer.data,
+            "rating": session.movie.rating,
+            "age_category": session.movie.age_category,
+            "duration": session.movie.get_duration_display(),
         })
 
 
