@@ -19,7 +19,7 @@ from rest_framework.pagination import PageNumberPagination
 from main.email_utils import send_email
 from main.models import Movies, Cinemas, Sessions, Seats, Order, Tickets, BonusTransaction, UserProfile
 from main.serializers import MoviesSerializer, CinemasSerializer, CinemaListSerializer, SessionsSerializer, \
-    UserSerializer
+    UserSerializer, SeatsSerializer
 
 
 class MovieList(APIView):
@@ -415,6 +415,38 @@ class UpdateUser(APIView):
             return Response(serializer.data)
         print("Validation errors:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class SessionSeatsView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, session_id):
+        try:
+            session = Sessions.objects.get(id=session_id)
+        except Sessions.DoesNotExist:
+            return Response({"error": "Session not found"}, status=404)
+
+        seats = Seats.objects.filter(hall=session.hall).order_by('row', 'num')
+
+        occupied_seat_ids = set(Tickets.objects.filter(
+            session=session,
+            order__status__in=[Order.OrderStatus.PAID, Order.OrderStatus.PENDING]
+        ).values_list('seat_id', flat=True))
+
+        serializer = SeatsSerializer(seats, many=True)
+        seats_data = serializer.data
+
+        for seat in seats_data:
+            seat['is_occupied'] = seat['id'] in occupied_seat_ids
+            seat['price'] = session.price
+
+        return Response({
+            "movie_title": session.movie.title,
+            "cinema_name": session.hall.cinema.name,
+            "hall_name": session.hall.name,
+            "start_time": session.start_time,
+            "seats": seats_data,
+            "session_price": session.price
+        })
 
 
 
