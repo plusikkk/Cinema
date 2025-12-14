@@ -5,14 +5,9 @@ from rest_framework.test import APIClient
 from main.models import Genres, Movies, Actors, MovieBadges, Halls, Cinemas, CityBadges, CinemaBadges
 
 
-
-
 @pytest.fixture(scope="function")
 def api_client():
    return APIClient()
-
-
-
 
 @pytest.fixture(scope="function")
 def user() -> User:
@@ -22,9 +17,6 @@ def user() -> User:
        email='user@example.com',
    )
 
-
-
-
 @pytest.fixture(scope="function")
 def admin() -> User:
    return User.objects.create_superuser(
@@ -33,31 +25,17 @@ def admin() -> User:
        email='admin@example.com',
    )
 
-
-
-
 @pytest.fixture(scope="function")
 def genres():
    return Genres.objects.create(name='Test Genre')
-
-
-
 
 @pytest.fixture(scope="function")
 def actors():
    return Actors.objects.create(name='Test Actor')
 
-
-
-
 @pytest.fixture(scope="function")
 def badges() -> MovieBadges:
    return MovieBadges.objects.create(name='Test Badge')
-
-
-
-
-
 
 @pytest.fixture
 def movie(genres, actors, badges) -> Movies:
@@ -74,20 +52,11 @@ def movie(genres, actors, badges) -> Movies:
        duration=120,
        director='Test Director'
    )
-
-
-
-
    movie.genres.add(genres)
    movie.actors.add(actors)
    movie.badges.add(badges)
-
-
    movie.save()
-
-
    return movie
-
 
 @pytest.fixture(scope="function")
 def movies_pagination():
@@ -95,7 +64,6 @@ def movies_pagination():
                                  release_date=datetime.date(2025, 1, 1),
                                  duration=120
                                  ) for i in range(24)]
-
 
 @pytest.fixture(scope="function")
 def movie_random(db):
@@ -111,11 +79,6 @@ def movie_random(db):
        return Movies.objects.create(**defaults)
    return create_movie
 
-
-
-
-
-
 @pytest.fixture(scope="function")
 def halls()-> Halls:
    halls =  Halls.objects.create(
@@ -125,36 +88,30 @@ def halls()-> Halls:
    )
    return halls
 
-
 @pytest.fixture(scope="function")
-def cinema(city,cinema_badge)->Cinemas:
+def cinema(cinema_badge,city)->Cinemas:
    cinema = Cinemas.objects.create(
        id=1,
        name= 'Test Name',
        description = 'Test Description',
        address ='Test Address',
        photo="https://example.com/photo.jpg",
-       latitude=50.45,
-       longitude=30.52,
-       city = city,
+       latitude='50.450000',
+       longitude='30.520000',
+       city=city,
    )
+   cinema.badges.add(cinema_badge)
    cinema.save()
    return cinema
 
-
 @pytest.fixture
 def city():
-   city = CityBadges.objects.create(
-       name="Kyiv"
-   )
+   city = CityBadges.objects.create(name="Test City")
    return city
-
 
 @pytest.fixture
 def cinema_badge():
    cinema_badge = CinemaBadges.objects.create(
        name="IMAX",
-
-
    )
    return cinema_badge
