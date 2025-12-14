@@ -42,18 +42,38 @@ class MovieList(APIView):
         elif status == 'soon':
             movies = movies.filter(release_date__gt=today)
 
-        genres = request.query_params.get('genres')     # Фільтрація лінку
+        is_animation = request.query_params.get('animation')
+        if is_animation == 'true':
+            movies = movies.filter(
+                Q(genres__name__icontains='Мульт') |
+                Q(genres__name__icontains='мульт') |
+                Q(genres__name__icontains='Анімац') |
+                Q(genres__name__icontains='анімац')
+            ).distinct()
+
+        is_kids = request.query_params.get('kids')
+        if is_kids == 'true':
+            movies = movies.filter(
+                Q(age_category__lte=12) &
+                (   Q(genres__name__icontains='Мульт') |
+                    Q(genres__name__icontains='мульт') |
+                    Q(genres__name__icontains='Анімац') |
+                    Q(genres__name__icontains='анімац')
+                )
+            ).distinct()
+
+        age_limit = request.query_params.get('age_limit')
+        if age_limit:
+            try:
+                limit_val = int(age_limit)
+                movies = movies.filter(age_category__lt= limit_val)
+            except ValueError:
+                pass
+
+        genres = request.query_params.get('genres')
         if genres:
-            movies = movies.filter(genres__name__icontains=genres).distinct()
-        age_category = request.query_params.get('age_category')
-        if age_category:
-            movies = movies.filter(age_category__exact=age_category)
-        actors = request.query_params.get('actors')
-        if actors:
-            movies = movies.filter(actors__name__icontains=actors).distinct()
-        director = request.query_params.get('director')
-        if director:
-            movies = movies.filter(director__icontains=director)
+            genre_list = genres.split(',')
+            movies = movies.filter(genres__name__in=genre_list).distinct()
 
         search_query = request.query_params.get('search', None)
         if search_query:
@@ -62,6 +82,8 @@ class MovieList(APIView):
                 Q(actors__name__icontains=search_query) |
                 Q(director__icontains=search_query)
             ).distinct()
+
+        movies = movies.order_by('-release_date')
 
         paginator = MoviesPagination()
         paginated_movies = paginator.paginate_queryset(movies, request, view=self)
@@ -95,9 +117,10 @@ class RandomMovie(APIView):
 
         if movie_type == 'animation': # Мультфільми
             movies = movies.filter(
-                Q(genres__name__icontains='мультфільм') |
-                Q(genres__name__icontains='анімація') |
-                Q(genres__name__icontains='animation')
+                Q(genres__name__icontains='Мульт') |
+                Q(genres__name__icontains='мульт') |
+                Q(genres__name__icontains='Анімац') |
+                Q(genres__name__icontains='анімац')
             )
 
         if family == 'family': # Сімейні фільми до 16+
