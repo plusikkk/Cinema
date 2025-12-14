@@ -27,7 +27,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'ccoonnel@gmail.com'
-EMAIL_HOST_PASSWORD = 'rqfd smka okmr rell'
+EMAIL_HOST_PASSWORD = 'KEY'
 
 LIQPAY_PUBLIC_KEY = "KEY"
 LIQPAY_PRIVATE_KEY = "KEY"
@@ -149,7 +149,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=20),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,

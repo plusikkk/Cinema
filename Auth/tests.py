@@ -23,12 +23,13 @@ def test_register_existing_active_user_fail(api_client, active_user, user_data, 
     response = api_client.post(register_url, user_data, format='json')
 
     assert response.status_code == 400
-    assert "User already exists" in str(response.data)
+    assert "Користувач з таким email вже існує" in str(response.data)
 
 @pytest.mark.django_db
 def test_register_existing_inactive_user_resend(api_client, inactive_user, user_data, register_url) -> None:
     new_data = user_data.copy()
     new_data['password'] = "new_password---01"
+    new_data['password_check'] = "new_password---01"
 
     with patch('Auth.views.send_act_email') as mock_email:
         response = api_client.post(register_url, new_data, format='json')
@@ -70,7 +71,7 @@ def test_register_existing_email_failure(api_client, active_user, register_url) 
     response = api_client.post(register_url, data, format='json')
 
     assert response.status_code == 400
-    assert "User already exists" in str(response.data)
+    assert "Користувач з таким email вже існує" in str(response.data)
 
 @pytest.mark.django_db
 def test_activation_success(api_client, inactive_user, activation_code, activation_url):
