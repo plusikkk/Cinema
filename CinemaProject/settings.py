@@ -27,7 +27,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'ccoonnel@gmail.com'
-EMAIL_HOST_PASSWORD = 'rqfd smka okmr rell'
+EMAIL_HOST_PASSWORD = 'KEY'
 
 LIQPAY_PUBLIC_KEY = "KEY"
 LIQPAY_PRIVATE_KEY = "KEY"
