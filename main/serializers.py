@@ -164,6 +164,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
             return None
         return value
 
+    def validate_birth_date(self, value):
+        if value is None or value == "":
+            return None
+        return value
+
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(required=False)
     class Meta:
