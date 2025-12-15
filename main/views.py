@@ -439,6 +439,16 @@ class UpdateUser(APIView):
         print("Validation errors:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @transaction.atomic
+    def delete(self, request):
+        user = request.user
+        user_id = user.id
+        try:
+            user.delete()
+            return Response({"message": f"Користувача #{user_id} було успішно видалено"}, status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({"error": f"Помилка видалення"}, status=status.HTTP_400_BAD_REQUEST)
+
 class SessionSeatsView(APIView):
     permission_classes = [AllowAny]
 
