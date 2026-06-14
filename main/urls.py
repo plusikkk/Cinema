@@ -12,5 +12,6 @@ urlpatterns = [
     path('payment/callback/', views.LiqPayCallback.as_view(), name='payment-callback'),
     path('random-movie/', views.RandomMovie.as_view(), name='random-movie'),
     path('auth/userprofile/', views.UpdateUser.as_view(), name='userprofile-detail'),
+    path('auth/tickets/', views.UserTicketsList.as_view(), name='user-tickets-list'),
     path('sessions/<int:session_id>/seats/', SessionSeatsView.as_view(), name='session_seats'),
 ]

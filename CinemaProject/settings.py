@@ -27,12 +27,12 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'ccoonnel@gmail.com'
-EMAIL_HOST_PASSWORD = 'KEY'
+EMAIL_HOST_PASSWORD = 'nosd plhu nykj ysma'
 
-LIQPAY_PUBLIC_KEY = "KEY"
-LIQPAY_PRIVATE_KEY = "KEY"
+LIQPAY_PUBLIC_KEY = "sandbox_i51519208421"
+LIQPAY_PRIVATE_KEY = "sandbox_lJyRx6p9S2fdzdlqdehNoM8wqJLUlUvO5sDhymbV"
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'overlate-unmorbidly-gwenda.ngrok-free.dev'] #ЗАМІНИТИ ПРИ НАСТУПНОМУ ЗАПУСКУ
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'undawning-guy-oilfired.ngrok-free.dev'] #ЗАМІНИТИ ПРИ НАСТУПНОМУ ЗАПУСКУ
 
 
 CORS_ALLOWED_ORIGINS = [

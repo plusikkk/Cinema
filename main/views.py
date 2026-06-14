@@ -19,7 +19,7 @@ from rest_framework.pagination import PageNumberPagination
 from main.email_utils import send_email
 from main.models import Movies, Cinemas, Sessions, Seats, Order, Tickets, BonusTransaction, UserProfile
 from main.serializers import MoviesSerializer, CinemasSerializer, CinemaListSerializer, SessionsSerializer, \
-    UserSerializer, SeatsSerializer, MovieBadgesSerializer
+    UserSerializer, SeatsSerializer, MovieBadgesSerializer, ProfileTicketSerializer
 
 
 class MovieList(APIView):
@@ -306,7 +306,7 @@ class CreateOrder(APIView):
             Tickets.objects.bulk_create(tickets_create)
 
             liqpay = LiqPay(settings.LIQPAY_PUBLIC_KEY, settings.LIQPAY_PRIVATE_KEY)
-            base_url = "https://overlate-unmorbidly-gwenda.ngrok-free.dev" #ЗАМІНИТИ ПРИ НАСТУПНОМУ ЗАПУСКУ
+            base_url = "https://undawning-guy-oilfired.ngrok-free.dev" #ЗАМІНИТИ ПРИ НАСТУПНОМУ ЗАПУСКУ
 
             if amount_to_pay == 0:
                 order.status = Order.OrderStatus.PAID
@@ -487,6 +487,19 @@ class SessionSeatsView(APIView):
             "age_category": session.movie.age_category,
             "duration": session.movie.get_duration_display(),
         })
+
+class UserTicketsList(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        tickets = Tickets.objects.filter(
+            order__user=user,
+            order__status__in=[Order.OrderStatus.PAID, Order.OrderStatus.REFUNDED]
+        ).order_by('-session__start_time')
+
+        serializer = ProfileTicketSerializer(tickets, many=True)
+        return Response(serializer.data)
 
 
 

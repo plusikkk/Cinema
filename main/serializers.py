@@ -188,4 +188,19 @@ class UserSerializer(serializers.ModelSerializer):
 
         return instance
 
+class ProfileTicketSerializer(serializers.ModelSerializer):
+    movie_title = serializers.CharField(source='session.movie.title', read_only=True)
+    cinema_name = serializers.CharField(source='session.hall.cinema.name', read_only=True)
+    hall_name = serializers.CharField(source='session.hall.name', read_only=True)
+    start_time = serializers.DateTimeField(source='session.start_time', read_only=True)
+    seat_display = serializers.SerializerMethodField()
+    order_status = serializers.CharField(source='order.get_status_display', read_only=True)
+
+    class Meta:
+        model = Tickets
+        fields = ['id', 'movie_title', 'cinema_name', 'hall_name', 'start_time', 'price', 'seat_display', 'is_cancelled', 'order_status']
+
+    def get_seat_display(self, obj):
+        return f"Ряд {obj.seat.row}, Місце {obj.seat.num}"
+
 
